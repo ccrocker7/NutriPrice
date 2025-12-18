@@ -1,4 +1,4 @@
-// lib/settings.dart
+// lib/Settings.dart
 
 import 'package:flutter/material.dart';
 
@@ -7,9 +7,8 @@ class Settings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(16.0),
-      child: Text('Settings will be found here'),
+    return Center(
+      child: Text('Welcome To Your Settings!', style: TextStyle(fontSize: 24))
     );
   }
 }

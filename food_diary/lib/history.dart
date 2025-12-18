@@ -1,4 +1,4 @@
-// lib/history.dart
+// lib/History.dart
 
 import 'package:flutter/material.dart';
 
@@ -7,9 +7,8 @@ class History extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(16.0),
-      child: Text('So you want to know your fate?'),
+    return Center(
+      child: Text('Welcome To Your History!', style: TextStyle(fontSize: 24))
     );
   }
 }

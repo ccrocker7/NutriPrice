@@ -7,9 +7,8 @@ class Home extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(16.0),
-      child: Text('Welcome Home!'),
+    return Center(
+      child: Text('Welcome Home!', style: TextStyle(fontSize: 24))
     );
   }
 }
