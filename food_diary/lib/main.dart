@@ -20,9 +20,10 @@ class NutriPriceApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         // A nutrition-themed color palette
+        // colorScheme: ColorScheme.dark(),
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.teal,
-          secondary: Colors.orangeAccent,
+          brightness: Brightness.dark,
         ),
         useMaterial3: true,
       ),
@@ -90,9 +91,10 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NutriPrice'),
+        title: Text('NutriPrice', style:TextStyle(fontWeight: FontWeight.bold) ),
         centerTitle: true,
-        backgroundColor: colorScheme.inversePrimary,
+        backgroundColor: colorScheme.surfaceContainer,
+        foregroundColor: colorScheme.primary,
       ),
       // Using IndexedStack ensures the state of pages is kept alive
       // when switching tabs.
@@ -117,7 +119,7 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
         shape: const CircularNotchedRectangle(), // Creates the cutout
         notchMargin: 8.0, // How much space between FAB and bar
         clipBehavior: Clip.antiAlias,
-        color: colorScheme.surfaceContainerHighest,
+        color: colorScheme.surfaceContainer,
         child: Row(
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -130,8 +132,8 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
              const SizedBox(width: 60),
 
             // Right Side Icons
-            _buildTabItem(icon: Icons.person_outline, index: 2, label: "History"),
-            _buildTabItem(icon: Icons.menu, index: 3, label: "Settings"),
+            _buildTabItem(icon: Icons.bar_chart, index: 2, label: "History"),
+            _buildTabItem(icon: Icons.settings, index: 3, label: "Settings"),
           ],
         ),
       ),
@@ -141,20 +143,19 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
   // A helper widget to build the bottom bar icons consistently
   Widget _buildTabItem({required IconData icon, required int index, required String label}) {
     final isSelected = _selectedIndex == index;
-    final color = isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.shade600;
+    final color = isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface;
 
     return InkWell(
       onTap: () => _onItemTapped(index),
       customBorder: const CircleBorder(),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color),
-             Text(label, style: TextStyle(color: color, fontSize: 12))
-          ],
+      child: SizedBox(
+        width: 100, // Define the size of your circular area
+        height: 100,
+        child: Center(
+          child: Icon(icon, color: color),
         ),
-      ),
+      )
+
     );
   }
 }
