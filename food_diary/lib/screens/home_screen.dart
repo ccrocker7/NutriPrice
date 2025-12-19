@@ -96,6 +96,75 @@ void _onScanButtonPressed() async {
   }
 }
 
+void _showManualEntryDialog() {
+  final nameController = TextEditingController();
+  final calController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) { // This is the local context for the dialog
+      return AlertDialog(
+        title: const Text("Manual Entry"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: "Product Name",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: calController,
+              decoration: const InputDecoration(
+                labelText: "Calories (kcal)",
+                border: OutlineInputBorder(),
+                suffixText: "kcal",
+              ),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), 
+            child: const Text("Cancel"),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (nameController.text.isNotEmpty) {
+                final manualProduct = FoodProduct(
+                  name: nameController.text,
+                  brand: "Manual Entry",
+                  imageUrl: "", 
+                  calories: calController.text,
+                );
+
+                // 1. The Async Gap (Waiting for database)
+                await DatabaseService.saveProduct(manualProduct);
+
+                // 2. The Fix: Check if this specific dialog context is still valid
+                if (!context.mounted) return;
+
+                // 3. Safe to navigate/show UI feedback
+                Navigator.pop(context);
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Added to Diary")),
+                );
+              }
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      );
+    },
+  );
+}
+
   // --- 3. The Centered Product Dialog ---
   void _showProductDialog(FoodProduct product) {
     showDialog(
@@ -199,7 +268,7 @@ void _onScanButtonPressed() async {
                 backgroundColor: colorScheme.surface,
                 label: 'Manual Entry',
                 labelStyle: const TextStyle(fontSize: 18.0),
-                // onTap: () => _showManualEntryDialog(),
+                onTap: () => _showManualEntryDialog(),
               ),
               // 2. Scan Button
               SpeedDialChild(
