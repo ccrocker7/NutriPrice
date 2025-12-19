@@ -99,7 +99,7 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
 
       // 4. Handle the result
       if (product != null) {
-        _showProductModal(product);
+        _showProductDialog(product);
       } else {
         _showErrorSnackBar("Product not found in database.");
       }
@@ -107,28 +107,108 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
   }
 
   // A quick helper to show the found product
-  void _showProductModal(FoodProduct product) {
-    showModalBottomSheet(
+  // void _showProductModal(FoodProduct product) {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     builder: (context) => Center(
+  //       child: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           if (product.imageUrl.isNotEmpty)
+  //             Image.network(product.imageUrl, height: 150),
+  //           Text(product.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+  //           Text(product.brand, style: const TextStyle(fontSize: 18, color: Colors.grey)),
+  //           const Divider(),
+  //           Text("Calories (per 100g): ${product.calories ?? 'N/A'} kcal"),
+  //           const SizedBox(height: 20),
+  //           ElevatedButton(
+  //             onPressed: () => Navigator.pop(context),
+  //             child: const Text("Add to Diary"),
+  //           )
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  void _showProductDialog(FoodProduct product) {
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      builder: (context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (product.imageUrl.isNotEmpty)
-              Image.network(product.imageUrl, height: 150),
-            Text(product.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            Text(product.brand, style: const TextStyle(fontSize: 18, color: Colors.grey)),
-            const Divider(),
-            Text("Calories (per 100g): ${product.calories ?? 'N/A'} kcal"),
-            const SizedBox(height: 20),
-            ElevatedButton(
+      builder: (BuildContext context) {
+        return AlertDialog(
+          // Rounded corners are set via the 'shape' property
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          // Use surfaceTintColor to give it that modern Material 3 look
+          surfaceTintColor: Theme.of(context).colorScheme.primary,
+          contentPadding: const EdgeInsets.all(20),
+          content: Column(
+            mainAxisSize: MainAxisSize.min, // Prevents dialog from taking full screen
+            children: [
+              // 1. Product Image
+              if (product.imageUrl.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(
+                    product.imageUrl,
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              const SizedBox(height: 16),
+
+              // 2. Product Info
+              Text(
+                product.name,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              Text(
+                product.brand,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+              ),
+              
+              const Divider(height: 32),
+
+              // 3. Nutritional Summary
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.bolt, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    "${product.calories ?? '---'} kcal / 100g",
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            // Close button
+            TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Add to Diary"),
-            )
+              child: const Text("Dismiss"),
+            ),
+            // Primary action button
+            FilledButton(
+              onPressed: () {
+                // TODO: Add to local database
+                Navigator.pop(context);
+              },
+              child: const Text("Save Product"),
+            ),
           ],
-        ),
-      ),
+          actionsAlignment: MainAxisAlignment.spaceEvenly,
+        );
+      },
     );
   }
 
