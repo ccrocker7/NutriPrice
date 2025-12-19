@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/food_product.dart';
 import '../services/product_service.dart';
 import 'scanner_screen.dart';
-import 'home.dart';
+import 'pantry.dart';
 import 'diary.dart';
 import 'history.dart';
 import 'settings.dart';
@@ -19,8 +19,8 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
 
   // The pages corresponding to our bottom navigation tabs
   static const List<Widget> _pages = <Widget>[
-    Home(),
     Diary(),
+    Pantry(),
     History(),
     Settings(),
   ];
