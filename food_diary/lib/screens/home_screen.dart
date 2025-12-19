@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+
+// 1. Internal Models & Services
 import '../models/food_product.dart';
+import '../services/database_service.dart';
 import '../services/product_service.dart';
+
+// 2. Navigation Screens
 import 'scanner_screen.dart';
 import 'pantry.dart';
 import 'diary.dart';
@@ -48,35 +53,47 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
   }
 
   // --- 2. The Scanning & API Logic ---
-  void _onScanButtonPressed() async {
-    // Navigate to scanner and wait for a barcode
-    final String? scannedCode = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+void _onScanButtonPressed() async {
+  // 1. Get the code and immediately close the scanner
+  final String? scannedCode = await Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+  );
+
+  // If the user cancelled, stop here
+  if (scannedCode == null || !mounted) return;
+
+  // 2. Immediate Visual Feedback (The Loader)
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const Center(
+      child: CircularProgressIndicator(),
+    ),
+  );
+
+  try {
+    // 3. Parallel API call
+    final service = ProductService();
+    // Setting a timeout can prevent the "infinite 5-second hang"
+    final product = await service.fetchProductByBarcode(scannedCode).timeout(
+      const Duration(seconds: 4),
+      onTimeout: () => throw Exception("Timeout"),
     );
 
-    if (scannedCode != null && mounted) {
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
+    // 4. Clean up and Show Result
+    if (mounted) Navigator.pop(context); // Close Loader
 
-      // Fetch product data
-      final service = ProductService();
-      final product = await service.fetchProductByBarcode(scannedCode);
-
-      // Remove loading indicator
-      if (mounted) Navigator.pop(context);
-
-      if (product != null) {
-        _showProductDialog(product);
-      } else {
-        _showErrorSnackBar("Product not found in Open Food Facts.");
-      }
+    if (product != null) {
+      _showProductDialog(product);
+    } else {
+      _showErrorSnackBar("Product not found.");
     }
+  } catch (e) {
+    if (mounted) Navigator.pop(context); // Close Loader
+    _showErrorSnackBar("Connection timed out. Try again!");
   }
+}
 
   // --- 3. The Centered Product Dialog ---
   void _showProductDialog(FoodProduct product) {
@@ -122,7 +139,27 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text("Dismiss")),
-            FilledButton(onPressed: () => Navigator.pop(context), child: const Text("Save Product")),
+            FilledButton(
+              onPressed: () async {
+                final db = DatabaseService();
+                
+                // We create a new FoodProduct instance or use the existing one
+                // Hive will store it as a Map thanks to our service
+                await db.saveProduct(product);
+                
+                if (mounted) {
+                  Navigator.pop(context); // Close the dialog
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text("Saved to your history!"),
+                      backgroundColor: Theme.of(context).colorScheme.secondary,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              child: const Text("Save Product"),
+            ),
           ],
           actionsAlignment: MainAxisAlignment.spaceEvenly,
         );
