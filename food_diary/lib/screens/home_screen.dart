@@ -97,36 +97,54 @@ void _onScanButtonPressed() async {
 }
 
 void _showManualEntryDialog() {
-  final nameController = TextEditingController();
-  final calController = TextEditingController();
+  final nameCtrl = TextEditingController();
+  final calCtrl = TextEditingController();
+  final proteinCtrl = TextEditingController();
+  final fatCtrl = TextEditingController();
+  final carbsCtrl = TextEditingController();
+  final fiberCtrl = TextEditingController();
+  final sodiumCtrl = TextEditingController();
+  final priceCtrl = TextEditingController();
 
   showDialog(
     context: context,
-    builder: (BuildContext context) { // This is the local context for the dialog
+    builder: (BuildContext context) {
       return AlertDialog(
         title: const Text("Manual Entry"),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: "Product Name",
-                border: OutlineInputBorder(),
+        content: SingleChildScrollView( // Allows scrolling on smaller phones
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: "Product Name",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.shopping_basket),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: calController,
-              decoration: const InputDecoration(
-                labelText: "Calories (kcal)",
-                border: OutlineInputBorder(),
-                suffixText: "kcal",
+              const SizedBox(height: 16),
+              
+              // Calories is the primary metric
+              _buildNutrientField(calCtrl, "Calories", "kcal", Icons.bolt),
+              const Divider(height: 32),
+              
+              // Nutrients Grid (2 per row)
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _buildNutrientField(proteinCtrl, "Protein", "g", Icons.fitness_center, width: 110),
+                  _buildNutrientField(fatCtrl, "Fat", "g", Icons.water_drop, width: 110),
+                  _buildNutrientField(carbsCtrl, "Carbs", "g", Icons.bakery_dining, width: 110),
+                  _buildNutrientField(fiberCtrl, "Fiber", "g", Icons.grass, width: 110),
+                  _buildNutrientField(sodiumCtrl, "Sodium", "mg", Icons.science, width: 110),
+                  _buildNutrientField(priceCtrl, "Price", "\$", Icons.attach_money, width: 110),
+                ],
               ),
-              keyboardType: TextInputType.number,
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -135,29 +153,28 @@ void _showManualEntryDialog() {
           ),
           FilledButton(
             onPressed: () async {
-              if (nameController.text.isNotEmpty) {
+              if (nameCtrl.text.isNotEmpty) {
                 final manualProduct = FoodProduct(
-                  name: nameController.text,
+                  name: nameCtrl.text,
                   brand: "Manual Entry",
-                  imageUrl: "", 
-                  calories: calController.text,
+                  calories: calCtrl.text,
+                  protein: proteinCtrl.text,
+                  fat: fatCtrl.text,
+                  carbs: carbsCtrl.text,
+                  fiber: fiberCtrl.text,
+                  sodium: sodiumCtrl.text,
                 );
 
-                // 1. The Async Gap (Waiting for database)
                 await DatabaseService.saveProduct(manualProduct);
 
-                // 2. The Fix: Check if this specific dialog context is still valid
                 if (!context.mounted) return;
-
-                // 3. Safe to navigate/show UI feedback
                 Navigator.pop(context);
-                
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Added to Diary")),
+                  const SnackBar(content: Center(child:Text("Added to Diary"))),
                 );
               }
             },
-            child: const Text("Save"),
+            child: const Text("Save Entry"),
           ),
         ],
       );
@@ -165,75 +182,82 @@ void _showManualEntryDialog() {
   );
 }
 
+// Helper widget to keep the dialog code clean
+Widget _buildNutrientField(
+    TextEditingController controller, String label, String unit, IconData icon, 
+    {double? width}) {
+  return SizedBox(
+    width: width,
+    child: TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: label,
+        suffixText: unit,
+        prefixIcon: Icon(icon, size: 20),
+        border: const OutlineInputBorder(),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+    ),
+  );
+}
+
   // --- 3. The Centered Product Dialog ---
-  void _showProductDialog(FoodProduct product) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          surfaceTintColor: Theme.of(context).colorScheme.primary,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (product.imageUrl.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    product.imageUrl,
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              const SizedBox(height: 16),
-              Text(
-                product.name,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+void _showProductDialog(FoodProduct product) {
+  // Controller to capture the optional price
+  final priceController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(product.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ... existing nutrition display code ...
+            
+            const Divider(),
+            TextField(
+              controller: priceController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: "Price (Optional)",
+                prefixText: "\$ ",
+                border: OutlineInputBorder(),
               ),
-              Text(
-                product.brand,
-                style: TextStyle(color: Theme.of(context).colorScheme.outline),
-              ),
-              const Divider(height: 32),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.bolt, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text("${product.calories ?? '---'} kcal / 100g", style: const TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Dismiss")),
-            FilledButton(
-              onPressed: () async {
-               
-                // We create a new FoodProduct instance or use the existing one
-                // Hive will store it as a Map thanks to our service
-                await DatabaseService.saveProduct(product);
-                
-                if (!context.mounted) return;
-                Navigator.pop(context); // Close the dialog
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text("Saved to your history!"),
-                    backgroundColor: Theme.of(context).colorScheme.secondary,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              child: const Text("Save Product"),
             ),
           ],
-          actionsAlignment: MainAxisAlignment.spaceEvenly,
-        );
-      },
-    );
-  }
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Dismiss")),
+          FilledButton(
+            onPressed: () async {
+              // Create a COPY of the product that includes the price
+              final productWithPrice = FoodProduct(
+                name: product.name,
+                brand: product.brand,
+                calories: product.calories,
+                fat: product.fat,
+                carbs: product.carbs,
+                fiber: product.fiber,
+                sodium: product.sodium,
+                protein: product.protein,
+                price: priceController.text.isNotEmpty ? priceController.text : null,
+              );
+
+              await DatabaseService.saveProduct(productWithPrice);
+              
+              if (!context.mounted) return;
+              Navigator.pop(context);
+            },
+            child: const Text("Save to Diary"),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   // --- 4. The Main Layout Build ---
   @override

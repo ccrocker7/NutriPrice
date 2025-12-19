@@ -17,7 +17,9 @@ class Diary extends StatelessWidget {
           final items = box.values.toList();
 
           if (items.isEmpty) {
-            return const Center(child: Text("No items saved yet."));
+            return Center(
+              child: Text('No items saved yet.', style: TextStyle(fontSize: 24))
+            );
           }
 
           return ListView.builder(
@@ -27,9 +29,6 @@ class Diary extends StatelessWidget {
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
-                  leading: product.imageUrl.isNotEmpty 
-                      ? Image.network(product.imageUrl, width: 50) 
-                      : const Icon(Icons.fastfood),
                   title: Text(product.name),
                   subtitle: Text(product.brand),
                   trailing: IconButton(

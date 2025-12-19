@@ -1,43 +1,71 @@
 class FoodProduct {
   final String name;
   final String brand;
-  final String imageUrl;
   final String? calories;
+  final String? fat;
+  final String? carbs;
+  final String? fiber;
+  final String? sodium;
+  final String? protein;
+  final String? price;
+
 
   FoodProduct({
-    required this.name, 
-    required this.brand, 
-    required this.imageUrl, 
-    this.calories
+    required this.name,
+    required this.brand,
+    this.calories,
+    this.fat,
+    this.carbs,
+    this.fiber,
+    this.sodium,
+    this.protein,
+    this.price,
+
   });
 
-  // Convert a FoodProduct to a Map to store in Hive
   Map<String, dynamic> toMap() {
     return {
       'name': name,
       'brand': brand,
-      'imageUrl': imageUrl,
       'calories': calories,
+      'fat': fat,
+      'carbs': carbs,
+      'fiber': fiber,
+      'sodium': sodium,
+      'protein': protein,
+      'price': price,
     };
   }
 
-  // Create a FoodProduct from a Hive Map
   factory FoodProduct.fromMap(Map<dynamic, dynamic> map) {
     return FoodProduct(
       name: map['name'] ?? 'Unknown',
       brand: map['brand'] ?? 'Unknown',
-      imageUrl: map['imageUrl'] ?? '',
       calories: map['calories'],
+      fat: map['fat'],
+      carbs: map['carbs'],
+      fiber: map['fiber'],
+      sodium: map['sodium'],
+      protein: map['protein'],
+      price: map['price'],
     );
   }
 
   factory FoodProduct.fromJson(Map<String, dynamic> json) {
     final product = json['product'];
+    final nutrients = product['nutriments'] ?? {};
+
     return FoodProduct(
       name: product['product_name'] ?? 'Unknown Product',
       brand: product['brands'] ?? 'Unknown Brand',
-      imageUrl: product['image_front_url'] ?? '',
-      calories: product['nutriments']?['energy-kcal_100g']?.toString(),
+      calories: nutrients['energy-kcal_100g']?.toString(),
+      fat: nutrients['fat_100g']?.toString(),
+      carbs: nutrients['carbohydrates_100g']?.toString(),
+      fiber: nutrients['fiber_100g']?.toString(),
+      sodium: nutrients['sodium_100g']?.toString(),
+      protein: nutrients['proteins_100g']?.toString(),
+      price: null, // API doesn't provide price; let user provide input.
+
     );
   }
 }
