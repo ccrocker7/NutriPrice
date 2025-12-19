@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import './home.dart';
 import './diary.dart';
 import './history.dart';
@@ -58,31 +60,76 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
     });
   }
 
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(color: Theme.of(context).colorScheme.onError),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        behavior: SnackBarBehavior.floating, // Makes it pop up slightly above the bottom bar
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   // Function to handle the scan button press
-  Future<void> _onScanButtonPressed() async {
-    // Navigate to the scanner screen and await the result
+  void _onScanButtonPressed() async {
     final String? scannedCode = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
     );
 
-    // If we got a code back (user didn't just back out), show it
     if (scannedCode != null && mounted) {
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text('Product Found: $scannedCode'),
-      //     backgroundColor: Colors.teal,
-      //     action: SnackBarAction(
-      //       label: 'VIEW',
-      //       textColor: Colors.white,
-      //       onPressed: () {
-      //         // TODO: Navigate to product details page using scannedCode
-      //         debugPrint("Navigating to details for $scannedCode");
-      //       },
-      //     ),
-      //   ),
-      // );
+      // 1. Show a loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // 2. Call the API
+      final service = ProductService();
+      final product = await service.fetchProductByBarcode(scannedCode);
+
+      // 3. Close the loading dialog
+      if (mounted) Navigator.pop(context);
+
+      // 4. Handle the result
+      if (product != null) {
+        _showProductModal(product);
+      } else {
+        _showErrorSnackBar("Product not found in database.");
+      }
     }
+  }
+
+  // A quick helper to show the found product
+  void _showProductModal(FoodProduct product) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (product.imageUrl.isNotEmpty)
+              Image.network(product.imageUrl, height: 150),
+            Text(product.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(product.brand, style: const TextStyle(fontSize: 18, color: Colors.grey)),
+            const Divider(),
+            Text("Calories (per 100g): ${product.calories ?? 'N/A'} kcal"),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Add to Diary"),
+            )
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -245,5 +292,55 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         ],
       ),
     );
+  }
+}
+
+
+// ==================== Part 4: The Food Product Class ====================
+class FoodProduct {
+  final String name;
+  final String brand;
+  final String imageUrl;
+  final String? calories; // Optional data
+
+  FoodProduct({
+    required this.name,
+    required this.brand,
+    required this.imageUrl,
+    this.calories,
+  });
+
+  // A factory method to turn the API's JSON into this FoodProduct object
+  factory FoodProduct.fromJson(Map<String, dynamic> json) {
+    final product = json['product'];
+    return FoodProduct(
+      name: product['product_name'] ?? 'Unknown Product',
+      brand: product['brands'] ?? 'Unknown Brand',
+      imageUrl: product['image_front_url'] ?? '',
+      calories: product['nutriments']?['energy-kcal_100g']?.toString(),
+    );
+  }
+}
+
+
+class ProductService {
+  Future<FoodProduct?> fetchProductByBarcode(String barcode) async {
+    final url = Uri.parse('https://world.openfoodfacts.org/api/v2/product/$barcode.json');
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 1) {
+          // Product was found!
+          return FoodProduct.fromJson(data);
+        }
+      }
+      return null; // Product not found
+    } catch (e) {
+      print('Error fetching product: $e');
+      return null;
+    }
   }
 }
