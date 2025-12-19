@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 // 1. Internal Models & Services
 import '../models/food_product.dart';
@@ -141,22 +142,20 @@ void _onScanButtonPressed() async {
             TextButton(onPressed: () => Navigator.pop(context), child: const Text("Dismiss")),
             FilledButton(
               onPressed: () async {
-                final db = DatabaseService();
-                
+               
                 // We create a new FoodProduct instance or use the existing one
                 // Hive will store it as a Map thanks to our service
-                await db.saveProduct(product);
+                await DatabaseService.saveProduct(product);
                 
-                if (mounted) {
-                  Navigator.pop(context); // Close the dialog
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text("Saved to your history!"),
-                      backgroundColor: Theme.of(context).colorScheme.secondary,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
+                if (!context.mounted) return;
+                Navigator.pop(context); // Close the dialog
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text("Saved to your history!"),
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
               },
               child: const Text("Save Product"),
             ),
@@ -183,14 +182,36 @@ void _onScanButtonPressed() async {
         index: _selectedIndex,
         children: _pages,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _onScanButtonPressed,
-        backgroundColor: colorScheme.secondary,
-        foregroundColor: colorScheme.onSecondary,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.qr_code_scanner, size: 30),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: SpeedDial(
+            icon: Icons.add,
+            activeIcon: Icons.close,
+            backgroundColor: colorScheme.secondary,
+            foregroundColor: colorScheme.onSecondary,
+            curve: Curves.bounceIn,
+            overlayColor: Colors.black,
+            overlayOpacity: 0.5,
+            spacing: 12,
+            spaceBetweenChildren: 12,
+            children: [
+              // 1. Manual Entry Button
+              SpeedDialChild(
+                child: const Icon(Icons.edit),
+                backgroundColor: colorScheme.surface,
+                label: 'Manual Entry',
+                labelStyle: const TextStyle(fontSize: 18.0),
+                // onTap: () => _showManualEntryDialog(),
+              ),
+              // 2. Scan Button
+              SpeedDialChild(
+                child: const Icon(Icons.qr_code_scanner),
+                backgroundColor: colorScheme.surface,
+                label: 'Scan Barcode',
+                labelStyle: const TextStyle(fontSize: 18.0),
+                onTap: _onScanButtonPressed, // Calls your existing scan logic
+              ),
+            ],
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8.0,

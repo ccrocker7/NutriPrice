@@ -10,7 +10,7 @@ class DatabaseService {
   }
 
   // Save product
-  Future<void> saveProduct(FoodProduct product) async {
+  static Future<void> saveProduct(FoodProduct product) async {
     final box = Hive.box(boxName);
     await box.add(product.toMap());
   }
