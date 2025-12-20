@@ -4,6 +4,7 @@ import '../models/weight_entry.dart';
 import '../models/food_product.dart';
 import '../widgets/weight_chart.dart';
 import '../widgets/spending_chart.dart';
+import '../widgets/tdee_chart.dart';
 
 class History extends StatelessWidget {
   const History({super.key});
@@ -92,6 +93,39 @@ class History extends StatelessWidget {
                         height: 300,
                         child: SpendingChart(entries: diaryEntries),
                       ),
+
+                    const Divider(height: 48),
+
+                    // TDEE Chart
+                    const Text(
+                      'TDEE History',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Builder(
+                      builder: (context) {
+                        final tdeeHistory = DatabaseService.getTDEEHistory();
+                        if (tdeeHistory.isEmpty) {
+                          return const SizedBox(
+                            height: 200,
+                            child: Center(
+                              child: Text(
+                                "Insufficient data for TDEE history.\nLog weight and food consistently for at least 2 days.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          );
+                        }
+                        return SizedBox(
+                          height: 300,
+                          child: TDEEChart(history: tdeeHistory),
+                        );
+                      },
+                    ),
 
                     const SizedBox(height: 24),
                   ],

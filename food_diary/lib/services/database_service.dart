@@ -257,4 +257,99 @@ class DatabaseService {
   static ValueListenable<Box> getWeightHistoryListenable() {
     return Hive.box(weightBoxName).listenable();
   }
+
+  // Calculate Estimated TDEE for 'now'
+  static double? calculateEstimatedTDEE() {
+    return calculateTDEEForDate(DateTime.now());
+  }
+
+  // Calculate TDEE for a specific date lookback (30 days prior to given date)
+  static double? calculateTDEEForDate(DateTime endDate) {
+    final weightBox = Hive.box(weightBoxName);
+    final diaryBox = Hive.box(diaryBoxName);
+
+    // 1. Get data for last 30 days relative to endDate
+    final startDate = endDate.subtract(const Duration(days: 30));
+
+    // Weight Entries: Filter for [startDate, endDate]
+    final weightEntries = weightBox.values
+        .map((item) => WeightEntry.fromMap(item))
+        .where(
+          (e) =>
+              e.date.isAfter(startDate) &&
+              e.date.isBefore(endDate.add(const Duration(days: 1))),
+        )
+        .toList();
+    // Sort by date ascending
+    weightEntries.sort((a, b) => a.date.compareTo(b.date));
+
+    // Diary Entries: Filter for [startDate, endDate]
+    final diaryEntries = diaryBox.values
+        .map((item) => FoodProduct.fromMap(item))
+        .where(
+          (e) =>
+              e.dateAdded != null &&
+              e.dateAdded!.isAfter(startDate) &&
+              e.dateAdded!.isBefore(endDate.add(const Duration(days: 1))),
+        )
+        .toList();
+
+    // 2. Validation
+    if (weightEntries.length < 2) return null;
+
+    final firstWeight = weightEntries.first;
+    final lastWeight = weightEntries.last;
+
+    final daysElapsed = lastWeight.date.difference(firstWeight.date).inDays;
+    if (daysElapsed < 1) return null;
+
+    // 3. Weight Change
+    final weightChange = lastWeight.weight - firstWeight.weight;
+
+    // 4. Maintenance Adjustment
+    // 3500 kcal per lb.
+    final dailySurplusDeficit = (weightChange * 3500) / daysElapsed;
+
+    // 5. Avg Intake
+    // Filter relevant diary strictly within the weight window
+    final relevantDiary = diaryEntries
+        .where(
+          (e) =>
+              e.dateAdded!.isAfter(
+                firstWeight.date.subtract(const Duration(hours: 12)),
+              ) &&
+              e.dateAdded!.isBefore(
+                lastWeight.date.add(const Duration(hours: 12)),
+              ),
+        )
+        .toList();
+
+    double totalCalories = 0;
+    for (var entry in relevantDiary) {
+      double cals = double.tryParse(entry.calories ?? '0') ?? 0;
+      totalCalories += cals;
+    }
+
+    final dailyIntake = totalCalories / daysElapsed;
+
+    // 6. TDEE
+    final tdee = dailyIntake - dailySurplusDeficit;
+
+    return tdee > 0 ? tdee : null;
+  }
+
+  // Get TDEE History for chart
+  static List<Map<String, dynamic>> getTDEEHistory({int days = 30}) {
+    final history = <Map<String, dynamic>>[];
+    final now = DateTime.now();
+
+    for (int i = 0; i < days; i++) {
+      final date = now.subtract(Duration(days: days - i - 1));
+      final tdee = calculateTDEEForDate(date);
+      if (tdee != null) {
+        history.add({'date': date, 'tdee': tdee});
+      }
+    }
+    return history;
+  }
 }
