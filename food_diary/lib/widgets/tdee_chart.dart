@@ -99,10 +99,7 @@ class TDEEChart extends StatelessWidget {
                 barWidth: 3,
                 isStrokeCapRound: true,
                 dotData: const FlDotData(show: true),
-                belowBarData: BarAreaData(
-                  show: true,
-                  color: Colors.deepPurple.withOpacity(0.2),
-                ),
+                belowBarData: BarAreaData(show: true, color: Colors.deepPurple),
               ),
             ],
           ),
