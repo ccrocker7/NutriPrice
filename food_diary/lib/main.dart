@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-// import 'package:hive_flutter/hive_flutter.dart'; // Add this
 import 'services/database_service.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Hive
   await DatabaseService.initialize();
-  
+
   runApp(const NutriPriceApp());
 }
 
