@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 import '../services/product_service.dart';
+import '../services/database_service.dart';
+import '../models/food_product.dart';
 import '../widgets/food_dialogs.dart'; // Our new file
 
 // Screens
@@ -34,7 +36,9 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
     _showLoading();
 
     try {
-      final product = await ProductService().fetchProductByBarcode(code).timeout(const Duration(seconds: 4));
+      final product = await ProductService()
+          .fetchProductByBarcode(code)
+          .timeout(const Duration(seconds: 4));
       if (!mounted) return;
       Navigator.pop(context); // Close loading
 
@@ -58,11 +62,158 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
   }
 
   void _showSnack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? Colors.red : null,
-      behavior: SnackBarBehavior.floating,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : null,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showSearchDialog() {
+    final dbService = DatabaseService();
+    final allProducts = dbService.getAllProducts();
+
+    if (allProducts.isEmpty) {
+      _showSnack("No products saved yet.", isError: true);
+      return;
+    }
+
+    final searchController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setState) {
+          // Filter products based on search query
+          final filteredProducts = allProducts.where((product) {
+            final query = searchController.text.toLowerCase();
+            return product.name.toLowerCase().contains(query) ||
+                product.brand.toLowerCase().contains(query);
+          }).toList();
+
+          return AlertDialog(
+            title: const Text("Search Products"),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 450,
+              child: Column(
+                children: [
+                  TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: "Search by name or brand...",
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: filteredProducts.isEmpty
+                        ? Center(
+                            child: Text(
+                              "No products found",
+                              style: TextStyle(color: Colors.grey[400]),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: filteredProducts.length,
+                            itemBuilder: (context, index) {
+                              final product = filteredProducts[index];
+                              return Card(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                child: ListTile(
+                                  leading: const Icon(Icons.restaurant_menu),
+                                  title: Text(product.name),
+                                  subtitle: Text(product.brand),
+                                  trailing: product.calories != null
+                                      ? Text(
+                                          '${product.calories} kcal',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        )
+                                      : null,
+                                  onTap: () {
+                                    Navigator.pop(dialogCtx);
+                                    _showProductDetails(product);
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: const Text("Close"),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showProductDetails(FoodProduct product) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(product.name),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(product.brand, style: TextStyle(color: Colors.grey[400])),
+              const Divider(height: 24),
+              if (product.calories != null)
+                _buildDetailRow("Calories", "${product.calories} kcal"),
+              if (product.protein != null)
+                _buildDetailRow("Protein", "${product.protein} g"),
+              if (product.fat != null)
+                _buildDetailRow("Fat", "${product.fat} g"),
+              if (product.carbs != null)
+                _buildDetailRow("Carbs", "${product.carbs} g"),
+              if (product.fiber != null)
+                _buildDetailRow("Fiber", "${product.fiber} g"),
+              if (product.sodium != null)
+                _buildDetailRow("Sodium", "${product.sodium} mg"),
+              if (product.price != null)
+                _buildDetailRow("Price", "\$${product.price}"),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text("Close"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(value),
+        ],
+      ),
+    );
   }
 
   @override
@@ -84,6 +235,11 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
       backgroundColor: theme.colorScheme.secondary,
       overlayOpacity: 0.5,
       children: [
+        SpeedDialChild(
+          child: const Icon(Icons.search),
+          label: 'Search Products',
+          onTap: _showSearchDialog,
+        ),
         SpeedDialChild(
           child: const Icon(Icons.edit),
           label: 'Manual Entry',
@@ -116,7 +272,10 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
 
   Widget _navItem(IconData icon, int index) {
     return IconButton(
-      icon: Icon(icon, color: _selectedIndex == index ? Colors.blue : Colors.grey),
+      icon: Icon(
+        icon,
+        color: _selectedIndex == index ? Colors.blue : Colors.grey,
+      ),
       onPressed: () => setState(() => _selectedIndex = index),
     );
   }
