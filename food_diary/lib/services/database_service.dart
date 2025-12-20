@@ -1,17 +1,21 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/food_product.dart';
+import '../models/weight_entry.dart';
 
 class DatabaseService {
   // Three separate boxes
   static const String productsBoxName = "products_box";
   static const String diaryBoxName = "diary_box";
   static const String pantryBoxName = "pantry_box";
+  static const String weightBoxName = "weight_box";
 
   static Future<void> initialize() async {
     await Hive.initFlutter();
     await Hive.openBox(productsBoxName);
     await Hive.openBox(diaryBoxName);
     await Hive.openBox(pantryBoxName);
+    await Hive.openBox(weightBoxName);
   }
 
   // ===== PRODUCTS (Master List) =====
@@ -184,12 +188,6 @@ class DatabaseService {
     }
 
     if (indexToUpdate != -1) {
-      // We preserve the master list logic: quantity/unit in master might be "1 Serving" reference,
-      // but here we are primarily updating the PRICE (and maybe nutrition if that changed).
-      // If 'product' comes from a Pantry edit (e.g. 500ml), we might NOT want to overwrite the master quantity
-      // if the master is meant to be a "reference unit".
-      // However, for simplicity and user request "update price", let's update the fields but maybe reset quantity/unit to defaults?
-      // Actually, usually users want the LAST used values. So updating everything is fine.
       await box.putAt(indexToUpdate, product.toMap());
     }
   }
@@ -211,5 +209,29 @@ class DatabaseService {
     if (indexToDelete != -1) {
       await box.deleteAt(indexToDelete);
     }
+  }
+
+  // ===== WEIGHT TRACKING =====
+
+  // Save weight entry
+  static Future<void> saveWeight(WeightEntry entry) async {
+    final box = Hive.box(weightBoxName);
+    await box.add(entry.toMap());
+  }
+
+  // Get weight history
+  static List<WeightEntry> getWeightHistory() {
+    final box = Hive.box(weightBoxName);
+    final entries = box.values
+        .map((item) => WeightEntry.fromMap(item))
+        .toList();
+    // Sort by date, newest first
+    entries.sort((a, b) => b.date.compareTo(a.date));
+    return entries;
+  }
+
+  // Get ValueListenable for weight history
+  static ValueListenable<Box> getWeightHistoryListenable() {
+    return Hive.box(weightBoxName).listenable();
   }
 }

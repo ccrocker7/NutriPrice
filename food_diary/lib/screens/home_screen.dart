@@ -5,6 +5,7 @@ import '../services/product_service.dart';
 import '../services/database_service.dart';
 import '../models/food_product.dart';
 import '../widgets/food_dialogs.dart'; // Our new file
+import '../widgets/weight_dialog.dart';
 
 // Screens
 import 'scanner_screen.dart';
@@ -400,6 +401,11 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
           child: const Icon(Icons.qr_code_scanner),
           label: 'Scan Barcode',
           onTap: _onScanButtonPressed,
+        ),
+        SpeedDialChild(
+          child: const Icon(Icons.monitor_weight),
+          label: 'Log Weight',
+          onTap: () => WeightDialog.show(context),
         ),
       ],
     );
