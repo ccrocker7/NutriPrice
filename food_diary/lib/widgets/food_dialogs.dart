@@ -67,7 +67,7 @@ class FoodDialogs {
                     Expanded(
                       flex: 3,
                       child: DropdownButtonFormField<String>(
-                        value: selectedUnit,
+                        initialValue: selectedUnit,
                         decoration: const InputDecoration(
                           labelText: "Unit",
                           border: OutlineInputBorder(),
@@ -237,7 +237,7 @@ class FoodDialogs {
                   Expanded(
                     flex: 3,
                     child: DropdownButtonFormField<String>(
-                      value: selectedUnit,
+                      initialValue: selectedUnit,
                       decoration: const InputDecoration(
                         labelText: "Unit",
                         border: OutlineInputBorder(),
@@ -328,6 +328,122 @@ class FoodDialogs {
                 ).showSnackBar(const SnackBar(content: Text("Added to Diary")));
               },
               child: const Text("Add to Diary"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static void showEditProduct({
+    required BuildContext context,
+    required FoodProduct product,
+    required Function(FoodProduct) onSave, // Callback for specific logic
+  }) {
+    final priceController = TextEditingController(text: product.price);
+    final quantityCtrl = TextEditingController(text: product.quantity ?? "1");
+    // Default unit fallback
+    String selectedUnit = product.unit ?? "Serving";
+    if (!_units.contains(selectedUnit)) selectedUnit = "Serving";
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text("Edit ${product.name}"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(product.brand, style: TextStyle(color: Colors.grey[400])),
+              const Divider(),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: TextField(
+                      controller: quantityCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: "Qty",
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 3,
+                    child: DropdownButtonFormField<String>(
+                      initialValue: selectedUnit,
+                      decoration: const InputDecoration(
+                        labelText: "Unit",
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onChanged: (val) {
+                        if (val != null) setState(() => selectedUnit = val);
+                      },
+                      items: _units
+                          .map(
+                            (u) => DropdownMenuItem(value: u, child: Text(u)),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: priceController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: "Price",
+                  prefixText: "\$ ",
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text("Cancel"),
+            ),
+            FilledButton(
+              onPressed: () async {
+                // Create updated product
+                final updatedProduct = FoodProduct(
+                  name: product.name,
+                  brand: product.brand,
+                  calories: product.calories,
+                  fat: product.fat,
+                  carbs: product.carbs,
+                  fiber: product.fiber,
+                  sodium: product.sodium,
+                  protein: product.protein,
+                  price: priceController.text.isEmpty
+                      ? null
+                      : priceController.text,
+                  quantity: quantityCtrl.text,
+                  unit: selectedUnit,
+                );
+
+                // Execute the callback (e.g. update diary or pantry)
+                await onSave(updatedProduct);
+
+                // ALSO update the master product reference (price/unit sync)
+                // This keeps the master list up to date with the latest price seen
+                await DatabaseService.updateMasterProduct(updatedProduct);
+
+                if (!dialogCtx.mounted) return;
+                Navigator.pop(dialogCtx);
+              },
+              child: const Text("Save"),
             ),
           ],
         ),

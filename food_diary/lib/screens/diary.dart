@@ -1,8 +1,8 @@
-// lib/screens/diary.dart
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/food_product.dart';
 import '../services/database_service.dart';
+import '../widgets/food_dialogs.dart';
 
 class Diary extends StatelessWidget {
   const Diary({super.key});
@@ -36,6 +36,12 @@ class Diary extends StatelessWidget {
                   title: Text(product.name),
                   subtitle: Text(
                     '${product.brand} • ${product.quantity ?? 1} ${product.unit ?? "Serving"}${product.price != null ? " • \$${product.price}" : ""}',
+                  ),
+                  onTap: () => FoodDialogs.showEditProduct(
+                    context: context,
+                    product: product,
+                    onSave: (newProduct) =>
+                        DatabaseService.updateDiaryEntry(index, newProduct),
                   ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),

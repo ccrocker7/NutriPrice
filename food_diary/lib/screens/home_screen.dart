@@ -132,14 +132,62 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
                                   leading: const Icon(Icons.restaurant_menu),
                                   title: Text(product.name),
                                   subtitle: Text(product.brand),
-                                  trailing: product.calories != null
-                                      ? Text(
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (product.calories != null)
+                                        Text(
                                           '${product.calories} kcal',
                                           style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),
-                                        )
-                                      : null,
+                                        ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                        ),
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: const Text(
+                                                "Delete Product",
+                                              ),
+                                              content: Text(
+                                                "Are you sure you want to delete '${product.name}'?",
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(ctx),
+                                                  child: const Text("Cancel"),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () async {
+                                                    Navigator.pop(ctx);
+                                                    await DatabaseService.deleteProduct(
+                                                      product,
+                                                    );
+                                                    // Update local list to refresh UI
+                                                    allProducts.remove(product);
+                                                    setState(() {});
+                                                  },
+                                                  child: const Text(
+                                                    "Delete",
+                                                    style: TextStyle(
+                                                      color: Colors.red,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                   onTap: () {
                                     Navigator.pop(dialogCtx);
                                     _showProductDetails(product);
@@ -207,7 +255,7 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
                     Expanded(
                       flex: 3,
                       child: DropdownButtonFormField<String>(
-                        value: selectedUnit,
+                        initialValue: selectedUnit,
                         decoration: const InputDecoration(
                           labelText: "Unit",
                           border: OutlineInputBorder(),

@@ -154,4 +154,62 @@ class DatabaseService {
     );
     await diaryBox.add(diaryEntry.toMap());
   }
+
+  // ===== UPDATE LOGIC =====
+
+  // Update diary entry at index
+  static Future<void> updateDiaryEntry(int index, FoodProduct product) async {
+    final box = Hive.box(diaryBoxName);
+    await box.putAt(index, product.toMap());
+  }
+
+  // Update pantry item at index
+  static Future<void> updatePantryItem(int index, FoodProduct product) async {
+    final box = Hive.box(pantryBoxName);
+    await box.putAt(index, product.toMap());
+  }
+
+  // Update master product (find by name+brand)
+  static Future<void> updateMasterProduct(FoodProduct product) async {
+    final box = Hive.box(productsBoxName);
+
+    int indexToUpdate = -1;
+    for (int i = 0; i < box.length; i++) {
+      final raw = box.getAt(i) as Map<dynamic, dynamic>;
+      final p = FoodProduct.fromMap(raw);
+      if (p.name == product.name && p.brand == product.brand) {
+        indexToUpdate = i;
+        break;
+      }
+    }
+
+    if (indexToUpdate != -1) {
+      // We preserve the master list logic: quantity/unit in master might be "1 Serving" reference,
+      // but here we are primarily updating the PRICE (and maybe nutrition if that changed).
+      // If 'product' comes from a Pantry edit (e.g. 500ml), we might NOT want to overwrite the master quantity
+      // if the master is meant to be a "reference unit".
+      // However, for simplicity and user request "update price", let's update the fields but maybe reset quantity/unit to defaults?
+      // Actually, usually users want the LAST used values. So updating everything is fine.
+      await box.putAt(indexToUpdate, product.toMap());
+    }
+  }
+
+  // Delete product from master list (find by name+brand)
+  static Future<void> deleteProduct(FoodProduct product) async {
+    final box = Hive.box(productsBoxName);
+
+    int indexToDelete = -1;
+    for (int i = 0; i < box.length; i++) {
+      final raw = box.getAt(i) as Map<dynamic, dynamic>;
+      final p = FoodProduct.fromMap(raw);
+      if (p.name == product.name && p.brand == product.brand) {
+        indexToDelete = i;
+        break;
+      }
+    }
+
+    if (indexToDelete != -1) {
+      await box.deleteAt(indexToDelete);
+    }
+  }
 }
