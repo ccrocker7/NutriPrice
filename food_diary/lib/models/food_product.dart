@@ -8,7 +8,8 @@ class FoodProduct {
   final String? sodium;
   final String? protein;
   final String? price;
-
+  final String? quantity;
+  final String? unit;
 
   FoodProduct({
     required this.name,
@@ -20,7 +21,8 @@ class FoodProduct {
     this.sodium,
     this.protein,
     this.price,
-
+    this.quantity,
+    this.unit,
   });
 
   Map<String, dynamic> toMap() {
@@ -34,6 +36,8 @@ class FoodProduct {
       'sodium': sodium,
       'protein': protein,
       'price': price,
+      'quantity': quantity,
+      'unit': unit,
     };
   }
 
@@ -48,6 +52,8 @@ class FoodProduct {
       sodium: map['sodium'],
       protein: map['protein'],
       price: map['price'],
+      quantity: map['quantity'],
+      unit: map['unit'],
     );
   }
 
@@ -64,8 +70,9 @@ class FoodProduct {
       fiber: nutrients['fiber_100g']?.toString(),
       sodium: nutrients['sodium_100g']?.toString(),
       protein: nutrients['proteins_100g']?.toString(),
-      price: null, // API doesn't provide price; let user provide input.
-
+      price: null,
+      quantity: '1', // Default quantity
+      unit: 'Serving', // Default unit
     );
   }
 }

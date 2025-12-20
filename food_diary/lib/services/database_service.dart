@@ -67,4 +67,91 @@ class DatabaseService {
     final box = Hive.box(pantryBoxName);
     await box.deleteAt(index);
   }
+
+  // ===== MOVE LOGIC =====
+
+  // Move quantity from Pantry to Diary
+  // Returns true if successful, false if not found or insufficient quantity (optional)
+  static Future<void> moveFromPantryToDiary(
+    FoodProduct product,
+    double amountToMove,
+  ) async {
+    final pantryBox = Hive.box(pantryBoxName);
+    final diaryBox = Hive.box(diaryBoxName);
+
+    // 1. Find the item in Pantry (match name and brand)
+    int pantryIndex = -1;
+    FoodProduct? pantryItem;
+
+    // Iterate through keys so we have the index/key for updates
+    for (int i = 0; i < pantryBox.length; i++) {
+      final raw = pantryBox.getAt(i) as Map<dynamic, dynamic>;
+      final p = FoodProduct.fromMap(raw);
+      if (p.name == product.name && p.brand == product.brand) {
+        pantryIndex = i;
+        pantryItem = p;
+        break;
+      }
+    }
+
+    // 3. Update Pantry (and determine cost)
+    String? diaryPrice = product.price; // Default if not in pantry
+
+    if (pantryIndex != -1 && pantryItem != null) {
+      // Parse current pantry quantity and price
+      double currentQty = double.tryParse(pantryItem.quantity ?? '0') ?? 1;
+      double currentPrice = double.tryParse(pantryItem.price ?? '0') ?? 0;
+
+      // Prevent division by zero
+      if (currentQty <= 0) currentQty = 1;
+
+      // Calculate unit price and cost for the moved amount
+      double unitPrice = currentPrice / currentQty;
+      double movedCost = unitPrice * amountToMove;
+      diaryPrice = movedCost.toStringAsFixed(2);
+
+      double newQty = currentQty - amountToMove;
+      double newRemainingPrice = unitPrice * newQty;
+      // Ensure we don't end up with negative price due to float precision
+      if (newRemainingPrice < 0) newRemainingPrice = 0;
+
+      if (newQty <= 0) {
+        // Remove from pantry if used up
+        await pantryBox.deleteAt(pantryIndex);
+      } else {
+        // Update quantity and price in Pantry
+        final updatedPantryItem = FoodProduct(
+          name: pantryItem.name,
+          brand: pantryItem.brand,
+          calories: pantryItem.calories,
+          fat: pantryItem.fat,
+          carbs: pantryItem.carbs,
+          fiber: pantryItem.fiber,
+          sodium: pantryItem.sodium,
+          protein: pantryItem.protein,
+          price: newRemainingPrice.toStringAsFixed(2),
+          quantity: newQty.toString(), // Store as simple string
+          unit: pantryItem.unit,
+        );
+        await pantryBox.putAt(pantryIndex, updatedPantryItem.toMap());
+      }
+    }
+
+    // 2. Add to Diary (moved step 2 after step 3 logic to use calculated price)
+    // Create diary entry with the specific amount moved and calculated price
+    final diaryEntry = FoodProduct(
+      name: product.name,
+      brand: product.brand,
+      calories: product.calories,
+      fat: product.fat,
+      carbs: product.carbs,
+      fiber: product.fiber,
+      sodium: product.sodium,
+      protein: product.protein,
+      price: diaryPrice,
+      quantity: amountToMove.toString(),
+      unit: product.unit,
+    );
+    await diaryBox.add(diaryEntry.toMap());
+  }
 }

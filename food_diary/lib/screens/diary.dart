@@ -34,7 +34,9 @@ class Diary extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.restaurant_menu),
                   title: Text(product.name),
-                  subtitle: Text(product.brand),
+                  subtitle: Text(
+                    '${product.brand} • ${product.quantity ?? 1} ${product.unit ?? "Serving"}${product.price != null ? " • \$${product.price}" : ""}',
+                  ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () => DatabaseService().deleteDiaryEntry(index),

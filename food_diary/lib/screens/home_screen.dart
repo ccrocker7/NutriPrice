@@ -165,58 +165,143 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
   }
 
   void _showProductDetails(FoodProduct product) {
+    final quantityCtrl = TextEditingController(text: "1");
+    // Default to strict 'Serving' matching or fallback
+    String selectedUnit = product.unit ?? "Serving";
+
+    // Ensure the default unit is in our list, otherwise default to Serving
+    const validUnits = ['Serving', 'g', 'mL', 'oz', 'lb', 'cup', 'tbsp', 'tsp'];
+    if (!validUnits.contains(selectedUnit)) {
+      selectedUnit = "Serving";
+    }
+
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: Text(product.name),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(product.brand, style: TextStyle(color: Colors.grey[400])),
-              const Divider(height: 24),
-              if (product.calories != null)
-                _buildDetailRow("Calories", "${product.calories} kcal"),
-              if (product.protein != null)
-                _buildDetailRow("Protein", "${product.protein} g"),
-              if (product.fat != null)
-                _buildDetailRow("Fat", "${product.fat} g"),
-              if (product.carbs != null)
-                _buildDetailRow("Carbs", "${product.carbs} g"),
-              if (product.fiber != null)
-                _buildDetailRow("Fiber", "${product.fiber} g"),
-              if (product.sodium != null)
-                _buildDetailRow("Sodium", "${product.sodium} mg"),
-              if (product.price != null)
-                _buildDetailRow("Price", "\$${product.price}"),
-            ],
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(product.name),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(product.brand, style: TextStyle(color: Colors.grey[400])),
+                const Divider(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: quantityCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: "Qty",
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 3,
+                      child: DropdownButtonFormField<String>(
+                        value: selectedUnit,
+                        decoration: const InputDecoration(
+                          labelText: "Unit",
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        onChanged: (val) {
+                          if (val != null) setState(() => selectedUnit = val);
+                        },
+                        items: validUnits
+                            .map(
+                              (u) => DropdownMenuItem(value: u, child: Text(u)),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (product.calories != null)
+                  _buildDetailRow("Calories", "${product.calories} kcal"),
+                if (product.protein != null)
+                  _buildDetailRow("Protein", "${product.protein} g"),
+                if (product.fat != null)
+                  _buildDetailRow("Fat", "${product.fat} g"),
+                if (product.carbs != null)
+                  _buildDetailRow("Carbs", "${product.carbs} g"),
+                if (product.fiber != null)
+                  _buildDetailRow("Fiber", "${product.fiber} g"),
+                if (product.sodium != null)
+                  _buildDetailRow("Sodium", "${product.sodium} mg"),
+                if (product.price != null)
+                  _buildDetailRow("Price", "\$${product.price}"),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text("Close"),
+            ),
+            FilledButton.tonal(
+              onPressed: () async {
+                // Update product with user-entered quantity
+                final newProduct = FoodProduct(
+                  name: product.name,
+                  brand: product.brand,
+                  calories: product.calories,
+                  fat: product.fat,
+                  carbs: product.carbs,
+                  fiber: product.fiber,
+                  sodium: product.sodium,
+                  protein: product.protein,
+                  price: product.price,
+                  quantity: quantityCtrl.text,
+                  unit: selectedUnit,
+                );
+                await DatabaseService.addToPantry(newProduct);
+                if (!dialogCtx.mounted) return;
+                Navigator.pop(dialogCtx);
+                _showSnack("Added to Pantry");
+              },
+              child: const Text("Add to Pantry"),
+            ),
+            FilledButton(
+              onPressed: () async {
+                // Update product with user-entered quantity
+                final newProduct = FoodProduct(
+                  name: product.name,
+                  brand: product.brand,
+                  calories: product.calories,
+                  fat: product.fat,
+                  carbs: product.carbs,
+                  fiber: product.fiber,
+                  sodium: product.sodium,
+                  protein: product.protein,
+                  price: product.price,
+                  quantity: quantityCtrl.text,
+                  unit: selectedUnit,
+                );
+                // logic: if it exists in pantry, deduct parsing the double quantity
+                double qtyToMove = double.tryParse(quantityCtrl.text) ?? 1.0;
+                await DatabaseService.moveFromPantryToDiary(
+                  newProduct,
+                  qtyToMove,
+                );
+
+                if (!dialogCtx.mounted) return;
+                Navigator.pop(dialogCtx);
+                _showSnack("Added to Diary");
+              },
+              child: const Text("Add to Diary"),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text("Close"),
-          ),
-          FilledButton.tonal(
-            onPressed: () async {
-              await DatabaseService.addToPantry(product);
-              if (!dialogCtx.mounted) return;
-              Navigator.pop(dialogCtx);
-              _showSnack("Added to Pantry");
-            },
-            child: const Text("Add to Pantry"),
-          ),
-          FilledButton(
-            onPressed: () async {
-              await DatabaseService.addToDiary(product);
-              if (!dialogCtx.mounted) return;
-              Navigator.pop(dialogCtx);
-              _showSnack("Added to Diary");
-            },
-            child: const Text("Add to Diary"),
-          ),
-        ],
       ),
     );
   }
