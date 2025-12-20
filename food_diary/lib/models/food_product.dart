@@ -10,6 +10,7 @@ class FoodProduct {
   final String? price;
   final String? quantity;
   final String? unit;
+  final DateTime? dateAdded;
 
   FoodProduct({
     required this.name,
@@ -23,6 +24,7 @@ class FoodProduct {
     this.price,
     this.quantity,
     this.unit,
+    this.dateAdded,
   });
 
   Map<String, dynamic> toMap() {
@@ -38,6 +40,7 @@ class FoodProduct {
       'price': price,
       'quantity': quantity,
       'unit': unit,
+      'dateAdded': dateAdded?.toIso8601String(),
     };
   }
 
@@ -54,6 +57,9 @@ class FoodProduct {
       price: map['price'],
       quantity: map['quantity'],
       unit: map['unit'],
+      dateAdded: map['dateAdded'] != null
+          ? DateTime.tryParse(map['dateAdded'])
+          : null,
     );
   }
 
@@ -73,6 +79,7 @@ class FoodProduct {
       price: null,
       quantity: '1', // Default quantity
       unit: 'Serving', // Default unit
+      dateAdded: DateTime.now(),
     );
   }
 }

@@ -37,7 +37,24 @@ class DatabaseService {
   // Add product to diary
   static Future<void> addToDiary(FoodProduct product) async {
     final box = Hive.box(diaryBoxName);
-    await box.add(product.toMap());
+    // Ensure dateAdded is set
+    final entry = product.dateAdded != null
+        ? product
+        : FoodProduct(
+            name: product.name,
+            brand: product.brand,
+            calories: product.calories,
+            fat: product.fat,
+            carbs: product.carbs,
+            fiber: product.fiber,
+            sodium: product.sodium,
+            protein: product.protein,
+            price: product.price,
+            quantity: product.quantity,
+            unit: product.unit,
+            dateAdded: DateTime.now(),
+          );
+    await box.add(entry.toMap());
   }
 
   // Get diary entries
@@ -155,6 +172,7 @@ class DatabaseService {
       price: diaryPrice,
       quantity: amountToMove.toString(),
       unit: product.unit,
+      dateAdded: DateTime.now(),
     );
     await diaryBox.add(diaryEntry.toMap());
   }
@@ -165,6 +183,11 @@ class DatabaseService {
   static Future<void> updateDiaryEntry(int index, FoodProduct product) async {
     final box = Hive.box(diaryBoxName);
     await box.putAt(index, product.toMap());
+  }
+
+  // Get ValueListenable for diary
+  static ValueListenable<Box> getDiaryListenable() {
+    return Hive.box(diaryBoxName).listenable();
   }
 
   // Update pantry item at index
