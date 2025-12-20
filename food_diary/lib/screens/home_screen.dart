@@ -198,6 +198,24 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
             onPressed: () => Navigator.pop(dialogCtx),
             child: const Text("Close"),
           ),
+          FilledButton.tonal(
+            onPressed: () async {
+              await DatabaseService.addToPantry(product);
+              if (!dialogCtx.mounted) return;
+              Navigator.pop(dialogCtx);
+              _showSnack("Added to Pantry");
+            },
+            child: const Text("Add to Pantry"),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await DatabaseService.addToDiary(product);
+              if (!dialogCtx.mounted) return;
+              Navigator.pop(dialogCtx);
+              _showSnack("Added to Diary");
+            },
+            child: const Text("Add to Diary"),
+          ),
         ],
       ),
     );

@@ -37,38 +37,109 @@ class FoodDialogs {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  _buildField(proteinCtrl, "Protein", "g", Icons.fitness_center, width: 110),
-                  _buildField(fatCtrl, "Fat", "g", Icons.water_drop, width: 110),
-                  _buildField(carbsCtrl, "Carbs", "g", Icons.bakery_dining, width: 110),
+                  _buildField(
+                    proteinCtrl,
+                    "Protein",
+                    "g",
+                    Icons.fitness_center,
+                    width: 110,
+                  ),
+                  _buildField(
+                    fatCtrl,
+                    "Fat",
+                    "g",
+                    Icons.water_drop,
+                    width: 110,
+                  ),
+                  _buildField(
+                    carbsCtrl,
+                    "Carbs",
+                    "g",
+                    Icons.bakery_dining,
+                    width: 110,
+                  ),
                   _buildField(fiberCtrl, "Fiber", "g", Icons.grass, width: 110),
-                  _buildField(sodiumCtrl, "Sodium", "mg", Icons.science, width: 110),
-                  _buildField(priceCtrl, "Price", "\$", Icons.attach_money, width: 110),
+                  _buildField(
+                    sodiumCtrl,
+                    "Sodium",
+                    "mg",
+                    Icons.science,
+                    width: 110,
+                  ),
+                  _buildField(
+                    priceCtrl,
+                    "Price",
+                    "\$",
+                    Icons.attach_money,
+                    width: 110,
+                  ),
                 ],
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text("Cancel"),
+          ),
+          FilledButton.tonal(
+            onPressed: () async {
+              if (nameCtrl.text.isEmpty) return;
+              final product = FoodProduct(
+                name: nameCtrl.text,
+                brand: "Manual Entry",
+                calories: calCtrl.text.isEmpty ? null : calCtrl.text,
+                protein: proteinCtrl.text.isEmpty ? null : proteinCtrl.text,
+                fat: fatCtrl.text.isEmpty ? null : fatCtrl.text,
+                carbs: carbsCtrl.text.isEmpty ? null : carbsCtrl.text,
+                fiber: fiberCtrl.text.isEmpty ? null : fiberCtrl.text,
+                sodium: sodiumCtrl.text.isEmpty ? null : sodiumCtrl.text,
+                price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
+              );
+              // Save to products master list
+              await DatabaseService.saveProduct(product);
+              // Add to pantry
+              await DatabaseService.addToPantry(product);
+              if (!dialogCtx.mounted) return;
+              Navigator.pop(dialogCtx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Added to Pantry"),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: const Text("Add to Pantry"),
+          ),
           FilledButton(
             onPressed: () async {
               if (nameCtrl.text.isEmpty) return;
               final product = FoodProduct(
                 name: nameCtrl.text,
                 brand: "Manual Entry",
-                calories: calCtrl.text,
-                protein: proteinCtrl.text,
-                fat: fatCtrl.text,
-                carbs: carbsCtrl.text,
-                fiber: fiberCtrl.text,
-                sodium: sodiumCtrl.text,
-                price: priceCtrl.text,
+                calories: calCtrl.text.isEmpty ? null : calCtrl.text,
+                protein: proteinCtrl.text.isEmpty ? null : proteinCtrl.text,
+                fat: fatCtrl.text.isEmpty ? null : fatCtrl.text,
+                carbs: carbsCtrl.text.isEmpty ? null : carbsCtrl.text,
+                fiber: fiberCtrl.text.isEmpty ? null : fiberCtrl.text,
+                sodium: sodiumCtrl.text.isEmpty ? null : sodiumCtrl.text,
+                price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
               );
+              // Save to products master list
               await DatabaseService.saveProduct(product);
+              // Add to diary
+              await DatabaseService.addToDiary(product);
               if (!dialogCtx.mounted) return;
               Navigator.pop(dialogCtx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Added to Diary"),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             },
-            child: const Text("Save Entry"),
+            child: const Text("Add to Diary"),
           ),
         ],
       ),
@@ -84,10 +155,13 @@ class FoodDialogs {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Text(product.brand, style: TextStyle(color: Colors.grey[400])),
             const Divider(),
             TextField(
               controller: priceController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(
                 labelText: "Price (Optional)",
                 prefixText: "\$ ",
@@ -97,7 +171,40 @@ class FoodDialogs {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text("Dismiss")),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text("Dismiss"),
+          ),
+          FilledButton.tonal(
+            onPressed: () async {
+              final finalProduct = FoodProduct(
+                name: product.name,
+                brand: product.brand,
+                calories: product.calories,
+                fat: product.fat,
+                carbs: product.carbs,
+                fiber: product.fiber,
+                sodium: product.sodium,
+                protein: product.protein,
+                price: priceController.text.isEmpty
+                    ? null
+                    : priceController.text,
+              );
+              // Save to products master list
+              await DatabaseService.saveProduct(finalProduct);
+              // Add to pantry
+              await DatabaseService.addToPantry(finalProduct);
+              if (!dialogCtx.mounted) return;
+              Navigator.pop(dialogCtx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Added to Pantry"),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: const Text("Add to Pantry"),
+          ),
           FilledButton(
             onPressed: () async {
               final finalProduct = FoodProduct(
@@ -109,20 +216,37 @@ class FoodDialogs {
                 fiber: product.fiber,
                 sodium: product.sodium,
                 protein: product.protein,
-                price: priceController.text,
+                price: priceController.text.isEmpty
+                    ? null
+                    : priceController.text,
               );
+              // Save to products master list
               await DatabaseService.saveProduct(finalProduct);
+              // Add to diary
+              await DatabaseService.addToDiary(finalProduct);
               if (!dialogCtx.mounted) return;
               Navigator.pop(dialogCtx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Added to Diary"),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             },
-            child: const Text("Save to Diary"),
+            child: const Text("Add to Diary"),
           ),
         ],
       ),
     );
   }
 
-  static Widget _buildField(TextEditingController ctrl, String label, String unit, IconData icon, {double? width}) {
+  static Widget _buildField(
+    TextEditingController ctrl,
+    String label,
+    String unit,
+    IconData icon, {
+    double? width,
+  }) {
     return SizedBox(
       width: width,
       child: TextField(
@@ -133,7 +257,10 @@ class FoodDialogs {
           suffixText: unit,
           prefixIcon: Icon(icon, size: 20),
           border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ),
         ),
       ),
     );

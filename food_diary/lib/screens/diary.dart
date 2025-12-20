@@ -12,13 +12,16 @@ class Diary extends StatelessWidget {
     return Scaffold(
       // ValueListenableBuilder listens to the Hive box for any changes
       body: ValueListenableBuilder(
-        valueListenable: Hive.box(DatabaseService.boxName).listenable(),
+        valueListenable: Hive.box(DatabaseService.diaryBoxName).listenable(),
         builder: (context, Box box, _) {
           final items = box.values.toList();
 
           if (items.isEmpty) {
-            return Center(
-              child: Text('No items saved yet.', style: TextStyle(fontSize: 24))
+            return const Center(
+              child: Text(
+                'No items in diary yet.',
+                style: TextStyle(fontSize: 24),
+              ),
             );
           }
 
@@ -29,11 +32,12 @@ class Diary extends StatelessWidget {
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
+                  leading: const Icon(Icons.restaurant_menu),
                   title: Text(product.name),
                   subtitle: Text(product.brand),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => box.deleteAt(index),
+                    onPressed: () => DatabaseService().deleteDiaryEntry(index),
                   ),
                 ),
               );
