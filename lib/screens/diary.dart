@@ -75,7 +75,6 @@ class _DiaryState extends State<Diary> {
             ),
           ),
           const Divider(height: 1),
-          // Diary List
           Expanded(
             child: ValueListenableBuilder(
               valueListenable: Hive.box(
@@ -83,68 +82,140 @@ class _DiaryState extends State<Diary> {
               ).listenable(),
               builder: (context, Box box, _) {
                 // Filter items by selected date
-                // Note: We need to pass the index of the original item for updates/deletes
-                // So we map to a structure preserving index, or just look up dynamically.
-                // Keeping it simple: We need the key (index) to update/delete.
-                // Hive box indices are stable if we don't compact? Actually deleteAt changes indices.
-                // Best to iterate deeply or use Keys if possible.
-                // Given current implementation uses `index` (int), we must be careful.
-                // Current `items` is list of values. `box.getAt(index)` works.
-                // If we filter, we lose the original index.
-
-                // Better approach: Create a list of {index, data} objects.
                 final dayItems = <Map<String, dynamic>>[];
+                double totalCalories = 0;
+                double totalFat = 0;
+                double totalCarbs = 0;
+                double totalProtein = 0;
 
                 for (int i = 0; i < box.length; i++) {
                   final raw = box.getAt(i) as Map<dynamic, dynamic>;
                   final product = FoodProduct.fromMap(raw);
                   if (_isSameDay(product.dateAdded, _selectedDate)) {
                     dayItems.add({'index': i, 'product': product});
+                    totalCalories +=
+                        double.tryParse(product.calories ?? '0') ?? 0;
+                    totalFat += double.tryParse(product.fat ?? '0') ?? 0;
+                    totalCarbs += double.tryParse(product.carbs ?? '0') ?? 0;
+                    totalProtein +=
+                        double.tryParse(product.protein ?? '0') ?? 0;
                   }
                 }
 
-                if (dayItems.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No entries for ${DateFormat('MM/dd').format(_selectedDate)}',
-                      style: const TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-                  );
-                }
+                return ValueListenableBuilder(
+                  valueListenable: DatabaseService.getGoalsListenable(),
+                  builder: (context, goalsBox, _) {
+                    final calGoal =
+                        goalsBox.get('calories_goal', defaultValue: 2000.0)
+                            as double;
+                    final proteinGoal =
+                        goalsBox.get('protein_goal', defaultValue: 150.0)
+                            as double;
+                    final carbGoal =
+                        goalsBox.get('carbs_goal', defaultValue: 200.0)
+                            as double;
+                    final fatGoal =
+                        goalsBox.get('fat_goal', defaultValue: 65.0) as double;
 
-                return ListView.builder(
-                  itemCount: dayItems.length,
-                  itemBuilder: (context, i) {
-                    final entry = dayItems[i];
-                    final index = entry['index'] as int;
-                    final product = entry['product'] as FoodProduct;
+                    return Column(
+                      children: [
+                        // Nutrition Summary Card
+                        Card(
+                          margin: const EdgeInsets.all(16),
+                          elevation: 4,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildSummaryItem(
+                                  'Calories',
+                                  '${totalCalories.round()}',
+                                  'kcal',
+                                  Colors.orange,
+                                  goal: '${calGoal.round()}',
+                                ),
+                                _buildSummaryItem(
+                                  'Protein',
+                                  totalProtein.toStringAsFixed(1),
+                                  'g',
+                                  Colors.red,
+                                  goal: proteinGoal.toStringAsFixed(1),
+                                ),
+                                _buildSummaryItem(
+                                  'Carbs',
+                                  totalCarbs.toStringAsFixed(1),
+                                  'g',
+                                  Colors.blue,
+                                  goal: carbGoal.toStringAsFixed(1),
+                                ),
+                                _buildSummaryItem(
+                                  'Fat',
+                                  totalFat.toStringAsFixed(1),
+                                  'g',
+                                  Colors.green,
+                                  goal: fatGoal.toStringAsFixed(1),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        Expanded(
+                          child: dayItems.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    'No entries for ${DateFormat('MM/dd').format(_selectedDate)}',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                )
+                              : ListView.builder(
+                                  itemCount: dayItems.length,
+                                  itemBuilder: (context, i) {
+                                    final entry = dayItems[i];
+                                    final index = entry['index'] as int;
+                                    final product =
+                                        entry['product'] as FoodProduct;
 
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: ListTile(
-                        leading: const Icon(Icons.restaurant_menu),
-                        title: Text(product.name),
-                        subtitle: Text(
-                          '${product.brand} • ${product.quantity ?? 1} ${product.unit ?? "Serving"}${product.price != null ? " • \$${product.price}" : ""}',
+                                    return Card(
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      child: ListTile(
+                                        leading: const Icon(
+                                          Icons.restaurant_menu,
+                                        ),
+                                        title: Text(product.name),
+                                        subtitle: Text(
+                                          '${product.brand} • ${product.quantity ?? 1} ${product.unit ?? "Serving"}${product.price != null ? " • \$${product.price}" : ""}',
+                                        ),
+                                        onTap: () => FoodDialogs.showEditProduct(
+                                          context: context,
+                                          product: product,
+                                          onSave: (newProduct) =>
+                                              DatabaseService.updateDiaryEntry(
+                                                index,
+                                                newProduct,
+                                              ),
+                                        ),
+                                        trailing: IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () => DatabaseService()
+                                              .deleteDiaryEntry(index),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                         ),
-                        onTap: () => FoodDialogs.showEditProduct(
-                          context: context,
-                          product: product,
-                          onSave: (newProduct) =>
-                              DatabaseService.updateDiaryEntry(
-                                index,
-                                newProduct,
-                              ),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () =>
-                              DatabaseService().deleteDiaryEntry(index),
-                        ),
-                      ),
+                      ],
                     );
                   },
                 );
@@ -153,6 +224,33 @@ class _DiaryState extends State<Diary> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSummaryItem(
+    String label,
+    String value,
+    String unit,
+    Color color, {
+    String? goal,
+  }) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          goal != null ? '$value / $goal' : value,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        Text(unit, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+      ],
     );
   }
 }

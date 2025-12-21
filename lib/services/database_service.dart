@@ -9,6 +9,7 @@ class DatabaseService {
   static const String diaryBoxName = "diary_box";
   static const String pantryBoxName = "pantry_box";
   static const String weightBoxName = "weight_box";
+  static const String goalsBoxName = "goals_box";
 
   static Future<void> initialize() async {
     await Hive.initFlutter();
@@ -16,6 +17,7 @@ class DatabaseService {
     await Hive.openBox(diaryBoxName);
     await Hive.openBox(pantryBoxName);
     await Hive.openBox(weightBoxName);
+    await Hive.openBox(goalsBoxName);
   }
 
   // ===== PRODUCTS (Master List) =====
@@ -351,5 +353,24 @@ class DatabaseService {
       }
     }
     return history;
+  }
+
+  // ===== GOALS =====
+
+  // Save a nutrition goal
+  static Future<void> saveGoal(String key, double value) async {
+    final box = Hive.box(goalsBoxName);
+    await box.put(key, value);
+  }
+
+  // Get a nutrition goal
+  static double getGoal(String key, {double defaultValue = 0}) {
+    final box = Hive.box(goalsBoxName);
+    return box.get(key, defaultValue: defaultValue) as double;
+  }
+
+  // Get ValueListenable for goals
+  static ValueListenable<Box> getGoalsListenable() {
+    return Hive.box(goalsBoxName).listenable();
   }
 }

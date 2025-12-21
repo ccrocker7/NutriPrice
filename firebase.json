@@ -1,6 +1,7 @@
 {
   "hosting": {
-    "source": ".",
+    "site": "nutriprice",
+    "public": "build/web",
     "ignore": [
       "firebase.json",
       "**/.*",

@@ -1,8 +1,55 @@
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
 
-class Settings extends StatelessWidget {
+class Settings extends StatefulWidget {
   const Settings({super.key});
+
+  @override
+  State<Settings> createState() => _SettingsState();
+}
+
+class _SettingsState extends State<Settings> {
+  final _calController = TextEditingController();
+  final _proteinController = TextEditingController();
+  final _carbController = TextEditingController();
+  final _fatController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _calController.text = DatabaseService.getGoal(
+      'calories_goal',
+      defaultValue: 2000,
+    ).round().toString();
+    _proteinController.text = DatabaseService.getGoal(
+      'protein_goal',
+      defaultValue: 150,
+    ).toStringAsFixed(1);
+    _carbController.text = DatabaseService.getGoal(
+      'carbs_goal',
+      defaultValue: 200,
+    ).toStringAsFixed(1);
+    _fatController.text = DatabaseService.getGoal(
+      'fat_goal',
+      defaultValue: 65,
+    ).toStringAsFixed(1);
+  }
+
+  @override
+  void dispose() {
+    _calController.dispose();
+    _proteinController.dispose();
+    _carbController.dispose();
+    _fatController.dispose();
+    super.dispose();
+  }
+
+  void _saveGoal(String key, String value) {
+    final double? val = double.tryParse(value);
+    if (val != null) {
+      DatabaseService.saveGoal(key, val);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,6 +61,44 @@ class Settings extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _buildSectionHeader(context, "Nutrition Goals"),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildGoalInput(
+                    "Daily Calories",
+                    _calController,
+                    "kcal",
+                    (v) => _saveGoal('calories_goal', v),
+                  ),
+                  const Divider(),
+                  _buildGoalInput(
+                    "Daily Protein",
+                    _proteinController,
+                    "g",
+                    (v) => _saveGoal('protein_goal', v),
+                  ),
+                  const Divider(),
+                  _buildGoalInput(
+                    "Daily Carbs",
+                    _carbController,
+                    "g",
+                    (v) => _saveGoal('carbs_goal', v),
+                  ),
+                  const Divider(),
+                  _buildGoalInput(
+                    "Daily Fat",
+                    _fatController,
+                    "g",
+                    (v) => _saveGoal('fat_goal', v),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
           _buildSectionHeader(context, "Statistics"),
           Card(
             child: Padding(
@@ -85,6 +170,38 @@ class Settings extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGoalInput(
+    String label,
+    TextEditingController controller,
+    String unit,
+    Function(String) onChanged,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+        ),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.end,
+            decoration: InputDecoration(
+              suffixText: " $unit",
+              isDense: true,
+              border: InputBorder.none,
+            ),
+            onChanged: onChanged,
+          ),
+        ),
+      ],
     );
   }
 
