@@ -73,21 +73,18 @@ class _SettingsState extends State<Settings> {
                     "kcal",
                     (v) => _saveGoal('calories_goal', v),
                   ),
-                  const Divider(),
                   _buildGoalInput(
                     "Daily Protein",
                     _proteinController,
                     "g",
                     (v) => _saveGoal('protein_goal', v),
                   ),
-                  const Divider(),
                   _buildGoalInput(
                     "Daily Carbs",
                     _carbController,
                     "g",
                     (v) => _saveGoal('carbs_goal', v),
                   ),
-                  const Divider(),
                   _buildGoalInput(
                     "Daily Fat",
                     _fatController,
@@ -179,29 +176,32 @@ class _SettingsState extends State<Settings> {
     String unit,
     Function(String) onChanged,
   ) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
             label,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
-        ),
-        Expanded(
-          child: TextField(
+          const SizedBox(height: 8),
+          TextField(
             controller: controller,
             keyboardType: TextInputType.number,
-            textAlign: TextAlign.end,
             decoration: InputDecoration(
-              suffixText: " $unit",
-              isDense: true,
-              border: InputBorder.none,
+              suffixText: unit,
+              hintText: "0.0",
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 16, // Better touch target
+              ),
             ),
             onChanged: onChanged,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

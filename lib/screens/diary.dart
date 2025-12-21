@@ -119,14 +119,15 @@ class _DiaryState extends State<Diary> {
 
                     return Column(
                       children: [
-                        // Nutrition Summary Card
                         Card(
                           margin: const EdgeInsets.all(16),
                           elevation: 4,
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            child: Wrap(
+                              alignment: WrapAlignment.spaceAround,
+                              runSpacing: 16,
+                              spacing: 8,
                               children: [
                                 _buildSummaryItem(
                                   'Calories',
@@ -134,6 +135,7 @@ class _DiaryState extends State<Diary> {
                                   'kcal',
                                   Colors.orange,
                                   goal: '${calGoal.round()}',
+                                  minWidth: 120,
                                 ),
                                 _buildSummaryItem(
                                   'Protein',
@@ -141,6 +143,7 @@ class _DiaryState extends State<Diary> {
                                   'g',
                                   Colors.red,
                                   goal: proteinGoal.toStringAsFixed(1),
+                                  minWidth: 100,
                                 ),
                                 _buildSummaryItem(
                                   'Carbs',
@@ -148,6 +151,7 @@ class _DiaryState extends State<Diary> {
                                   'g',
                                   Colors.blue,
                                   goal: carbGoal.toStringAsFixed(1),
+                                  minWidth: 100,
                                 ),
                                 _buildSummaryItem(
                                   'Fat',
@@ -155,6 +159,7 @@ class _DiaryState extends State<Diary> {
                                   'g',
                                   Colors.green,
                                   goal: fatGoal.toStringAsFixed(1),
+                                  minWidth: 100,
                                 ),
                               ],
                             ),
@@ -233,24 +238,28 @@ class _DiaryState extends State<Diary> {
     String unit,
     Color color, {
     String? goal,
+    double minWidth = 80,
   }) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: color,
+    return ConstrainedBox(
+      constraints: BoxConstraints(minWidth: minWidth),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          goal != null ? '$value / $goal' : value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        Text(unit, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            goal != null ? '$value / $goal' : value,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          Text(unit, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        ],
+      ),
     );
   }
 }

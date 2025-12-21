@@ -32,21 +32,43 @@ class Pantry extends StatelessWidget {
               final product = FoodProduct.fromMap(items[index]);
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: ListTile(
-                  leading: const Icon(Icons.kitchen),
-                  title: Text(product.name),
-                  subtitle: Text(
-                    '${product.brand} • ${product.quantity ?? 1} ${product.unit ?? "Serving"}${product.price != null ? " • \$${product.price}" : ""}',
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.kitchen,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  title: Text(
+                    product.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      '${product.brand}\n${product.quantity ?? 1} ${product.unit ?? "Serving"}${product.price != null ? " • \$${product.price}" : ""}',
+                    ),
+                  ),
+                  isThreeLine: true,
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => DatabaseService().deletePantryItem(index),
                   ),
                   onTap: () => FoodDialogs.showEditProduct(
                     context: context,
                     product: product,
                     onSave: (newProduct) =>
                         DatabaseService.updatePantryItem(index, newProduct),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => DatabaseService().deletePantryItem(index),
                   ),
                 ),
               );
