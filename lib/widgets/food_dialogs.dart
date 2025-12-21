@@ -628,7 +628,7 @@ class FoodDialogs {
                     Expanded(
                       flex: 3,
                       child: DropdownButtonFormField<String>(
-                        value: selectedUnit,
+                        initialValue: selectedUnit,
                         decoration: const InputDecoration(
                           labelText: "Unit",
                           border: OutlineInputBorder(),
