@@ -44,7 +44,7 @@ class FoodDialogs {
     showDialog(
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (_, setState) => AlertDialog(
           title: const Text("Manual Entry"),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
@@ -83,7 +83,7 @@ class FoodDialogs {
                       flex: 3,
                       child: ValueListenableBuilder<String>(
                         valueListenable: selectedUnit,
-                        builder: (context, unit, _) =>
+                        builder: (_, unit, _) =>
                             DropdownButtonFormField<String>(
                               initialValue: unit,
                               decoration: const InputDecoration(
@@ -372,7 +372,7 @@ class FoodDialogs {
     showDialog(
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (_, setState) => AlertDialog(
           title: Text(product.name),
           content: SingleChildScrollView(
             child: Column(
@@ -414,7 +414,7 @@ class FoodDialogs {
                       flex: 3,
                       child: ValueListenableBuilder<String>(
                         valueListenable: selectedUnit,
-                        builder: (context, currentUnit, _) =>
+                        builder: (_, currentUnit, _) =>
                             DropdownButtonFormField<String>(
                               initialValue: currentUnit,
                               decoration: const InputDecoration(
@@ -440,7 +440,7 @@ class FoodDialogs {
                 ),
                 AnimatedBuilder(
                   animation: Listenable.merge([quantityCtrl, selectedUnit]),
-                  builder: (context, _) {
+                  builder: (_, _) {
                     double enteredQty =
                         double.tryParse(quantityCtrl.text) ?? 1.0;
                     double multiplier = enteredQty;
@@ -600,7 +600,7 @@ class FoodDialogs {
     showDialog(
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (_, setState) => AlertDialog(
           title: Text("Edit ${product.name}"),
           content: SingleChildScrollView(
             child: Column(
@@ -662,7 +662,7 @@ class FoodDialogs {
                 const SizedBox(height: 16),
                 AnimatedBuilder(
                   animation: quantityCtrl,
-                  builder: (context, _) {
+                  builder: (_, _) {
                     // Create a copy to use its scaling logic
                     final preview = FoodProduct(
                       name: product.name,
