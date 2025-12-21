@@ -240,7 +240,6 @@ class _NutriPriceHomeScreenState extends State<NutriPriceHomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('NutriPrice'), centerTitle: true),
       body: IndexedStack(index: _selectedIndex, children: _pages),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: _buildSpeedDial(theme),

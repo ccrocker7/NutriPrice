@@ -54,13 +54,16 @@ class _SettingsState extends State<Settings> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        automaticallyImplyLeading: false,
-      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24.0, horizontal: 4.0),
+            child: Text(
+              'Settings',
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+            ),
+          ),
           _buildSectionHeader(context, "Nutrition Goals"),
           Card(
             child: Padding(
