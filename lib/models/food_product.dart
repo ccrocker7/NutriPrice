@@ -10,6 +10,9 @@ class FoodProduct {
   final String? price;
   final String? quantity;
   final String? unit;
+  final String? unitPrice;
+  final double? servingQuantity;
+  final String? servingUnit;
   final DateTime? dateAdded;
 
   FoodProduct({
@@ -24,6 +27,9 @@ class FoodProduct {
     this.price,
     this.quantity,
     this.unit,
+    this.unitPrice,
+    this.servingQuantity,
+    this.servingUnit,
     this.dateAdded,
   });
 
@@ -40,6 +46,9 @@ class FoodProduct {
       'price': price,
       'quantity': quantity,
       'unit': unit,
+      'unitPrice': unitPrice,
+      'servingQuantity': servingQuantity,
+      'servingUnit': servingUnit,
       'dateAdded': dateAdded?.toIso8601String(),
     };
   }
@@ -57,6 +66,11 @@ class FoodProduct {
       price: map['price'],
       quantity: map['quantity'],
       unit: map['unit'],
+      unitPrice: map['unitPrice'],
+      servingQuantity: map['servingQuantity'] != null
+          ? (map['servingQuantity'] as num).toDouble()
+          : null,
+      servingUnit: map['servingUnit'],
       dateAdded: map['dateAdded'] != null
           ? DateTime.tryParse(map['dateAdded'])
           : null,
@@ -67,19 +81,56 @@ class FoodProduct {
     final product = json['product'];
     final nutrients = product['nutriments'] ?? {};
 
+    // Helper to get serving-based nutrient or calculate it from 100g
+    String? getNutrient(String key) {
+      final servingValue = nutrients['${key}_serving'];
+      if (servingValue != null) return servingValue.toString();
+
+      final value100g = nutrients['${key}_100g'];
+      if (value100g == null) return null;
+
+      final servingQty = product['serving_quantity'] != null
+          ? (product['serving_quantity'] as num).toDouble()
+          : null;
+
+      if (servingQty != null) {
+        double density = (value100g as num).toDouble() / 100.0;
+        return (density * servingQty).toStringAsFixed(2);
+      }
+      return value100g.toString();
+    }
+
     return FoodProduct(
       name: product['product_name'] ?? 'Unknown Product',
       brand: product['brands'] ?? 'Unknown Brand',
-      calories: nutrients['energy-kcal_100g']?.toString(),
-      fat: nutrients['fat_100g']?.toString(),
-      carbs: nutrients['carbohydrates_100g']?.toString(),
-      fiber: nutrients['fiber_100g']?.toString(),
-      sodium: nutrients['sodium_100g']?.toString(),
-      protein: nutrients['proteins_100g']?.toString(),
+      calories: getNutrient('energy-kcal'),
+      fat: getNutrient('fat'),
+      carbs: getNutrient('carbohydrates'),
+      fiber: getNutrient('fiber'),
+      sodium: getNutrient('sodium'),
+      protein: getNutrient('proteins'),
       price: null,
-      quantity: '1', // Default quantity
-      unit: 'Serving', // Default unit
+      quantity: '1',
+      unit: 'Serving',
+      servingQuantity: product['serving_quantity'] != null
+          ? (product['serving_quantity'] as num).toDouble()
+          : 1.0,
+      servingUnit: product['serving_quantity_unit'],
       dateAdded: DateTime.now(),
     );
+  }
+
+  /// Calculates the multiplier to apply to base nutrients (which are per-serving).
+  /// If unit is "Serving", multiplier = quantity.
+  /// If unit is weight-based (e.g., "g"), multiplier = (quantity / servingQuantity).
+  double getNutrientMultiplier() {
+    double qty = double.tryParse(quantity ?? "1") ?? 1.0;
+    if (unit == 'Serving' || unit == null) {
+      return qty;
+    }
+    if (servingQuantity != null && servingQuantity! > 0) {
+      return qty / servingQuantity!;
+    }
+    return qty;
   }
 }

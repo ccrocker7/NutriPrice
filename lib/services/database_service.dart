@@ -76,7 +76,31 @@ class DatabaseService {
   // Add product to pantry
   static Future<void> addToPantry(FoodProduct product) async {
     final box = Hive.box(pantryBoxName);
-    await box.add(product.toMap());
+
+    // Calculate unit price if possible
+    double price = double.tryParse(product.price ?? '0') ?? 0;
+    double qty = double.tryParse(product.quantity ?? '1') ?? 1;
+    if (qty <= 0) qty = 1;
+    String unitPrice = (price / qty).toStringAsFixed(4);
+
+    final entry = FoodProduct(
+      name: product.name,
+      brand: product.brand,
+      calories: product.calories,
+      fat: product.fat,
+      carbs: product.carbs,
+      fiber: product.fiber,
+      sodium: product.sodium,
+      protein: product.protein,
+      price: product.price,
+      quantity: product.quantity,
+      unit: product.unit,
+      unitPrice: unitPrice,
+      servingQuantity: product.servingQuantity,
+      servingUnit: product.servingUnit,
+      dateAdded: product.dateAdded ?? DateTime.now(),
+    );
+    await box.add(entry.toMap());
   }
 
   // Get pantry items
@@ -102,13 +126,13 @@ class DatabaseService {
     final pantryBox = Hive.box(pantryBoxName);
     final diaryBox = Hive.box(diaryBoxName);
 
-    // 1. Find the item in Pantry (match name and brand)
+    // Find item in pantry safely
     int pantryIndex = -1;
     FoodProduct? pantryItem;
 
-    // Iterate through keys so we have the index/key for updates
     for (int i = 0; i < pantryBox.length; i++) {
-      final raw = pantryBox.getAt(i) as Map<dynamic, dynamic>;
+      final raw = pantryBox.getAt(i);
+      if (raw is! Map) continue;
       final p = FoodProduct.fromMap(raw);
       if (p.name == product.name && p.brand == product.brand) {
         pantryIndex = i;
@@ -117,32 +141,24 @@ class DatabaseService {
       }
     }
 
-    // 3. Update Pantry (and determine cost)
-    String? diaryPrice = product.price; // Default if not in pantry
+    String? diaryPrice = product.price;
 
     if (pantryIndex != -1 && pantryItem != null) {
-      // Parse current pantry quantity and price
       double currentQty = double.tryParse(pantryItem.quantity ?? '0') ?? 1;
-      double currentPrice = double.tryParse(pantryItem.price ?? '0') ?? 0;
 
-      // Prevent division by zero
-      if (currentQty <= 0) currentQty = 1;
-
-      // Calculate unit price and cost for the moved amount
-      double unitPrice = currentPrice / currentQty;
-      double movedCost = unitPrice * amountToMove;
-      diaryPrice = movedCost.toStringAsFixed(2);
+      // If the dialog didn't provide a price, calculate it from pantry
+      if (diaryPrice == null || diaryPrice.isEmpty) {
+        double unitPrice = double.tryParse(pantryItem.unitPrice ?? '0') ?? 0;
+        double movedCost = unitPrice * amountToMove;
+        diaryPrice = movedCost.toStringAsFixed(2);
+      }
 
       double newQty = currentQty - amountToMove;
-      double newRemainingPrice = unitPrice * newQty;
-      // Ensure we don't end up with negative price due to float precision
-      if (newRemainingPrice < 0) newRemainingPrice = 0;
 
       if (newQty <= 0) {
-        // Remove from pantry if used up
         await pantryBox.deleteAt(pantryIndex);
       } else {
-        // Update quantity and price in Pantry
+        // Update quantity but keep original purchase price
         final updatedPantryItem = FoodProduct(
           name: pantryItem.name,
           brand: pantryItem.brand,
@@ -152,16 +168,17 @@ class DatabaseService {
           fiber: pantryItem.fiber,
           sodium: pantryItem.sodium,
           protein: pantryItem.protein,
-          price: newRemainingPrice.toStringAsFixed(2),
-          quantity: newQty.toString(), // Store as simple string
+          price: pantryItem.price, // Keep original purchase price
+          quantity: newQty.toString(),
           unit: pantryItem.unit,
+          unitPrice: pantryItem.unitPrice,
+          servingQuantity: pantryItem.servingQuantity,
+          servingUnit: pantryItem.servingUnit,
         );
         await pantryBox.putAt(pantryIndex, updatedPantryItem.toMap());
       }
     }
 
-    // 2. Add to Diary (moved step 2 after step 3 logic to use calculated price)
-    // Create diary entry with the specific amount moved and calculated price
     final diaryEntry = FoodProduct(
       name: product.name,
       brand: product.brand,
@@ -174,9 +191,22 @@ class DatabaseService {
       price: diaryPrice,
       quantity: amountToMove.toString(),
       unit: product.unit,
+      servingQuantity: product.servingQuantity,
+      servingUnit: product.servingUnit,
       dateAdded: DateTime.now(),
     );
     await diaryBox.add(diaryEntry.toMap());
+  }
+
+  // Find a pantry item by name and brand
+  static FoodProduct? findPantryItem(String name, String? brand) {
+    final box = Hive.box(pantryBoxName);
+    for (var raw in box.values) {
+      if (raw is! Map) continue;
+      final p = FoodProduct.fromMap(raw);
+      if (p.name == name && (brand == null || p.brand == brand)) return p;
+    }
+    return null;
   }
 
   // ===== UPDATE LOGIC =====
@@ -329,7 +359,7 @@ class DatabaseService {
     double totalCalories = 0;
     for (var entry in relevantDiary) {
       double cals = double.tryParse(entry.calories ?? '0') ?? 0;
-      totalCalories += cals;
+      totalCalories += (cals * entry.getNutrientMultiplier());
     }
 
     final dailyIntake = totalCalories / daysElapsed;

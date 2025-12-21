@@ -81,9 +81,21 @@ class WeightDialog {
 
                 if (!ctx.mounted) return;
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text("Weight saved!")));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text("Weight saved!"),
+                    behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.only(
+                      bottom: 100,
+                      left: 24,
+                      right: 24,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.blueGrey[800],
+                  ),
+                );
               },
               child: const Text("Save"),
             ),

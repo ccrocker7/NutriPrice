@@ -29,7 +29,9 @@ class Pantry extends StatelessWidget {
           return ListView.builder(
             itemCount: items.length,
             itemBuilder: (context, index) {
-              final product = FoodProduct.fromMap(items[index]);
+              final raw = items[index];
+              if (raw is! Map) return const SizedBox.shrink();
+              final product = FoodProduct.fromMap(raw);
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(

@@ -87,18 +87,28 @@ class _DiaryState extends State<Diary> {
                 double totalFat = 0;
                 double totalCarbs = 0;
                 double totalProtein = 0;
+                double totalSpend = 0;
 
                 for (int i = 0; i < box.length; i++) {
-                  final raw = box.getAt(i) as Map<dynamic, dynamic>;
+                  final raw = box.getAt(i);
+                  if (raw is! Map) continue; // Safety check
                   final product = FoodProduct.fromMap(raw);
                   if (_isSameDay(product.dateAdded, _selectedDate)) {
+                    double multiplier = product.getNutrientMultiplier();
                     dayItems.add({'index': i, 'product': product});
+
                     totalCalories +=
-                        double.tryParse(product.calories ?? '0') ?? 0;
-                    totalFat += double.tryParse(product.fat ?? '0') ?? 0;
-                    totalCarbs += double.tryParse(product.carbs ?? '0') ?? 0;
+                        (double.tryParse(product.calories ?? '0') ?? 0) *
+                        multiplier;
+                    totalFat +=
+                        (double.tryParse(product.fat ?? '0') ?? 0) * multiplier;
+                    totalCarbs +=
+                        (double.tryParse(product.carbs ?? '0') ?? 0) *
+                        multiplier;
                     totalProtein +=
-                        double.tryParse(product.protein ?? '0') ?? 0;
+                        (double.tryParse(product.protein ?? '0') ?? 0) *
+                        multiplier;
+                    totalSpend += double.tryParse(product.price ?? '0') ?? 0;
                   }
                 }
 
@@ -161,6 +171,13 @@ class _DiaryState extends State<Diary> {
                                   goal: fatGoal.toStringAsFixed(1),
                                   minWidth: 100,
                                 ),
+                                _buildSummaryItem(
+                                  'Spend',
+                                  '\$${totalSpend.toStringAsFixed(2)}',
+                                  'Total',
+                                  Colors.teal,
+                                  minWidth: 120,
+                                ),
                               ],
                             ),
                           ),
@@ -195,8 +212,23 @@ class _DiaryState extends State<Diary> {
                                           Icons.restaurant_menu,
                                         ),
                                         title: Text(product.name),
-                                        subtitle: Text(
-                                          '${product.brand} • ${product.quantity ?? 1} ${product.unit ?? "Serving"}${product.price != null ? " • \$${product.price}" : ""}',
+                                        subtitle: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '${product.brand} • ${product.quantity ?? 1} ${product.unit ?? "Serving"}${product.price != null ? " • \$${product.price}" : ""}',
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '${((double.tryParse(product.calories ?? '0') ?? 0) * product.getNutrientMultiplier()).toStringAsFixed(0)} kcal logged',
+                                              style: TextStyle(
+                                                color: Colors.blue[300],
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                         onTap: () => FoodDialogs.showEditProduct(
                                           context: context,
