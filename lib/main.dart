@@ -250,6 +250,41 @@ class AppState extends ChangeNotifier {
   double? getWeightForDate(DateTime date) {
     try { return _weightHistory.firstWhere((w) => DateUtils.isSameDay(w.date, date)).weight; } catch (_) { return null; }
   }
+    double? calculateEstimatedTDEE() {
+    if (_weightHistory.length < 2 || _diary.isEmpty) return null;
+
+    // 1. Get the date range (last 7 days)
+    final end = DateUtils.dateOnly(DateTime.now());
+    final start = end.subtract(const Duration(days: 7));
+
+    // 2. Calculate average intake over these days
+    double totalCalsConsumed = 0;
+    int daysWithLogs = 0;
+    for (int i = 0; i <= 7; i++) {
+      final date = start.add(Duration(days: i));
+      final dayLogs = _diary[date];
+      if (dayLogs != null && dayLogs.isNotEmpty) {
+        totalCalsConsumed += dayLogs.fold(0, (sum, item) => sum + item.calories);
+        daysWithLogs++;
+      }
+    }
+    if (daysWithLogs == 0) return null;
+    double avgIntake = totalCalsConsumed / daysWithLogs;
+
+    // 3. Calculate Weight Change
+    // Get weights closest to the start and end of our window
+    final latestWeight = _weightHistory.last.weight;
+    final earliestWeight = _weightHistory.first.weight; 
+    // For a better calculation, you'd find entries specifically at the start/end of the week
+    
+    double weightDiff = latestWeight - earliestWeight;
+    
+    // 4. Convert weight diff to calorie offset (using lbs here)
+    // (Weight change * 3500) / days in period
+    double dailyOffset = (weightDiff * 3500) / 7;
+
+    return avgIntake - dailyOffset; 
+  }
 }
 
 // --- GLOBAL HELPERS ---
@@ -436,7 +471,7 @@ class DiaryPage extends StatelessWidget {
     final state = context.watch<AppState>();
     final entries = state.getLogForSelectedDate();
     return Scaffold(
-      appBar: AppBar(title: const Text("Macro Diary"), centerTitle: true),
+      // appBar: AppBar(title: const Text("Macro Diary"), centerTitle: true),
       body: Column(
         children: [
           Container(
@@ -510,7 +545,7 @@ class _PantryPageState extends State<PantryPage> {
     final state = context.watch<AppState>();
     final items = state.pantry.where((i) => i.name.toLowerCase().contains(_query.toLowerCase())).toList();
     return Scaffold(
-      appBar: AppBar(title: const Text("Pantry Library")),
+      // appBar: AppBar(title: const Text("Pantry Library")),
       body: Column(
         children: [
           Padding(padding: const EdgeInsets.all(8), child: TextField(decoration: const InputDecoration(hintText: "Search Pantry...", prefixIcon: Icon(Icons.search)), onChanged: (v) => setState(() => _query = v))),
@@ -566,7 +601,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     return Scaffold(
-      appBar: AppBar(title: const Text("Settings & Trends")),
+      // appBar: AppBar(title: const Text("Settings & Trends")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -577,6 +612,38 @@ class _SettingsPageState extends State<SettingsPage> {
             SizedBox(
               height: 200,
               child: state.weightHistory.isEmpty ? const Center(child: Text("No weight logs yet.")) : LineChart(_chartData(state.weightHistory)),
+            ),
+            // Inside SettingsPage build method...
+            const Divider(height: 40),
+            const Text("Estimated TDEE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 8),
+            Builder(
+              builder: (context) {
+                final tdee = state.calculateEstimatedTDEE();
+                return Card(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          tdee != null ? "${tdee.toStringAsFixed(0)} kcal" : "Need more data...",
+                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                        const Text(
+                          "Based on your last 7 days of logs and weight changes.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        if (tdee != null)
+                          TextButton(
+                            onPressed: () => state.updateGoals(tdee, state.profile.fatGoal, state.profile.carbGoal, state.profile.proteinGoal, state.profile.budgetGoal),
+                            child: const Text("Set as Daily Goal"),
+                          )
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
             const Divider(height: 40),
             const Text("Daily Goals", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
