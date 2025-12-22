@@ -143,7 +143,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(labelText: label),
-      keyboardType: TextInputType.number,
+      keyboardType: TextInputType.numberWithOptions(decimal: true),
       validator: (v) => double.tryParse(v ?? '') == null ? "Required" : null,
     );
   }

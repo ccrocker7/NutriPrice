@@ -302,7 +302,7 @@ void showAmountDialog(BuildContext context, FoodItem baseItem, DateTime date, {F
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: controller, decoration: const InputDecoration(labelText: "Amount"), keyboardType: TextInputType.number),
+            TextField(controller: controller, decoration: const InputDecoration(labelText: "Amount"), keyboardType: TextInputType.numberWithOptions(decimal: true), autofocus: true),
             const SizedBox(height: 10),
             DropdownButton<FoodUnit>(
               value: selectedUnit,
@@ -389,7 +389,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final ctrl = TextEditingController(text: state.getWeightForDate(state.selectedDate)?.toString() ?? "");
     showDialog(context: context, builder: (c) => AlertDialog(
       title: const Text("Log Weight"),
-      content: TextField(controller: ctrl, decoration: const InputDecoration(labelText: "Weight"), keyboardType: TextInputType.number, autofocus: true),
+      content: TextField(controller: ctrl, decoration: const InputDecoration(labelText: "Weight"), keyboardType: TextInputType.numberWithOptions(decimal: true), autofocus: true),
       actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text("Cancel")), ElevatedButton(onPressed: () { state.logWeight(state.selectedDate, double.tryParse(ctrl.text) ?? 0); Navigator.pop(c); }, child: const Text("Save"))],
     ));
   }
@@ -659,7 +659,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _field(String label, TextEditingController ctrl, Function(double) update) => TextField(
-    controller: ctrl, decoration: InputDecoration(labelText: label), keyboardType: TextInputType.number, 
+    controller: ctrl, decoration: InputDecoration(labelText: label), keyboardType: TextInputType.numberWithOptions(decimal: true), 
     onChanged: (v) => update(double.tryParse(v) ?? 0),
   );
 
