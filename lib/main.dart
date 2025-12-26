@@ -13,18 +13,18 @@ void main() {
   runApp(
     ChangeNotifierProvider(
       create: (context) => AppState(),
-      child: const MacroEconomicsApp(),
+      child: const NutriPriceApp(),
     ),
   );
 }
 
-class MacroEconomicsApp extends StatelessWidget {
-  const MacroEconomicsApp({super.key});
+class NutriPriceApp extends StatelessWidget {
+  const NutriPriceApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MacroEconomics',
+      title: 'Nutriprice',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
