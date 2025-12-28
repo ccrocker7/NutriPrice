@@ -183,9 +183,69 @@ class _SettingsPageState extends State<SettingsPage> {
     final last7 = history.length > 7
         ? history.sublist(history.length - 7)
         : history;
+
+    // Find min and max weights for Y-axis scaling
+    final weights = last7.map((e) => e.weight).toList();
+    final minWeight = weights.reduce((a, b) => a < b ? a : b);
+    final maxWeight = weights.reduce((a, b) => a > b ? a : b);
+    final weightRange = maxWeight - minWeight;
+    final padding = weightRange > 0 ? weightRange * 0.1 : 5.0;
+
     return LineChartData(
-      gridData: const FlGridData(show: false),
-      titlesData: const FlTitlesData(show: false),
+      gridData: const FlGridData(show: true, drawVerticalLine: false),
+      titlesData: FlTitlesData(
+        show: true,
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 30,
+            interval: last7.length > 1 ? (last7.length - 1) / 3 : 1,
+            getTitlesWidget: (value, meta) {
+              final index = value.toInt();
+              if (index < 0 || index >= last7.length) return const Text('');
+
+              // Only show labels at the beginning, middle, and end to avoid crowding
+              final shouldShow =
+                  index == 0 ||
+                  index == (last7.length / 2).floor() ||
+                  index == last7.length - 1;
+
+              if (!shouldShow) return const Text('');
+
+              final date = last7[index].date;
+              return Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  '${date.month}/${date.day}',
+                  style: const TextStyle(fontSize: 10),
+                ),
+              );
+            },
+          ),
+        ),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 40,
+            getTitlesWidget: (value, meta) {
+              return Text(
+                value.toStringAsFixed(0),
+                style: const TextStyle(fontSize: 10),
+              );
+            },
+          ),
+        ),
+      ),
+      borderData: FlBorderData(
+        show: true,
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      minY: minWeight - padding,
+      maxY: maxWeight + padding,
       lineBarsData: [
         LineChartBarData(
           spots: last7
@@ -195,8 +255,12 @@ class _SettingsPageState extends State<SettingsPage> {
               .toList(),
           isCurved: true,
           color: Colors.green,
-          barWidth: 4,
-          belowBarData: BarAreaData(show: true, color: Colors.green),
+          barWidth: 3,
+          dotData: const FlDotData(show: true),
+          belowBarData: BarAreaData(
+            show: true,
+            color: Colors.green.withAlpha(51), // 20% opacity = 51/255
+          ),
         ),
       ],
     );

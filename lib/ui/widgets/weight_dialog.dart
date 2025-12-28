@@ -27,12 +27,14 @@ Future<void> showWeightDialog(BuildContext context, DateTime date) async {
           child: const Text("Cancel"),
         ),
         ElevatedButton(
-          onPressed: () {
+          onPressed: () async {
             final weight = double.tryParse(ctrl.text) ?? 0;
             if (weight > 0) {
-              state.logWeight(date, weight);
+              await state.logWeight(date, weight);
             }
-            Navigator.pop(c);
+            if (context.mounted) {
+              Navigator.pop(c);
+            }
           },
           child: const Text("Save"),
         ),

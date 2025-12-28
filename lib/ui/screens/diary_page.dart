@@ -88,8 +88,8 @@ class DiaryPage extends StatelessWidget {
                 return Dismissible(
                   key: Key(item.id),
                   direction: DismissDirection.endToStart,
-                  onDismissed: (_) =>
-                      state.deleteDiaryEntry(state.selectedDate, item.id),
+                  onDismissed: (_) async =>
+                      await state.deleteDiaryEntry(state.selectedDate, item.id),
                   background: Container(
                     color: Colors.red,
                     alignment: Alignment.centerRight,

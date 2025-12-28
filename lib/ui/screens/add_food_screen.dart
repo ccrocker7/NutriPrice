@@ -67,7 +67,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
     _selectedUnit = item?.servingUnit ?? FoodUnit.grams;
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (_formKey.currentState!.validate()) {
       // 1. Ensure we don't divide by zero
       final totalServings = double.tryParse(_totalServingsController.text) ?? 1;
@@ -96,18 +96,20 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
       // 3. Logic check: If it's a quick log, it goes to Diary.
       // Otherwise, if it's NOT in the pantry list yet, add it.
       if (widget.isLoggingOnly) {
-        state.logFoodToDate(state.selectedDate, newItem);
+        await state.logFoodToDate(state.selectedDate, newItem);
       } else {
         // Check if this specific ID already exists in the pantry
         final exists = state.pantry.any((item) => item.id == newItem.id);
         if (exists) {
-          state.updatePantryItem(newItem);
+          await state.updatePantryItem(newItem);
         } else {
-          state.addToPantry(newItem);
+          await state.addToPantry(newItem);
         }
       }
 
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
     }
   }
 

@@ -58,7 +58,7 @@ void showAmountDialog(
             child: const Text("Cancel"),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final amt = double.tryParse(controller.text) ?? 0;
               if (amt > 0) {
                 double mult = (selectedUnit == FoodUnit.servings)
@@ -68,7 +68,7 @@ void showAmountDialog(
 
                 if (existingItem == null) {
                   // Adding new entry
-                  state.logFoodToDate(
+                  await state.logFoodToDate(
                     date,
                     FoodItem(
                       id: const Uuid().v4(),
@@ -91,7 +91,7 @@ void showAmountDialog(
                     orElse: () => baseItem,
                   );
 
-                  state.updateDiaryEntry(
+                  await state.updateDiaryEntry(
                     date,
                     existingItem.id,
                     FoodItem(
@@ -109,7 +109,10 @@ void showAmountDialog(
                     ),
                   );
                 }
-                Navigator.pop(context);
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
               }
             },
             child: Text(existingItem == null ? "Log Entry" : "Update"),

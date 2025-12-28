@@ -40,7 +40,8 @@ class _PantryPageState extends State<PantryPage> {
                 final item = items[i];
                 return Dismissible(
                   key: Key(item.id),
-                  onDismissed: (_) => state.deletePantryItem(item.id),
+                  onDismissed: (_) async =>
+                      await state.deletePantryItem(item.id),
                   background: Container(
                     color: Colors.red,
                     alignment: Alignment.centerRight,
