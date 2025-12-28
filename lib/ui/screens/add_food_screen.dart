@@ -89,6 +89,10 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
         price: pricePerServing,
         servingSize: double.parse(_servingSizeController.text),
         servingUnit: _selectedUnit,
+        // Calculate inventory: Total Servings × Serving Size
+        quantityRemaining:
+            totalServings * double.parse(_servingSizeController.text),
+        inventoryUnit: _selectedUnit,
       );
 
       final state = context.read<AppState>();

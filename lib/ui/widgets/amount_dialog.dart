@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
 import '../../domain/models/food_item.dart';
 import '../../domain/models/food_unit.dart';
 import '../../providers/app_state.dart';
@@ -67,11 +66,12 @@ void showAmountDialog(
                 final state = context.read<AppState>();
 
                 if (existingItem == null) {
-                  // Adding new entry
+                  // Adding new entry - preserve pantry item ID for inventory tracking
                   await state.logFoodToDate(
                     date,
                     FoodItem(
-                      id: const Uuid().v4(),
+                      id: baseItem
+                          .id, // Preserve ID from pantry for inventory tracking
                       name: baseItem.name,
                       servingSize: amt,
                       servingUnit: selectedUnit,

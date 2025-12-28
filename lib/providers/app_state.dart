@@ -4,9 +4,11 @@ import '../data/repositories/diary_repository.dart';
 import '../data/repositories/weight_repository.dart';
 import '../data/repositories/user_profile_repository.dart';
 import '../domain/models/food_item.dart';
+import '../domain/models/food_unit.dart';
 import '../domain/models/user_profile.dart';
 import '../domain/models/weight_entry.dart';
 import '../domain/services/tdee_calculator.dart';
+import '../domain/services/unit_converter.dart';
 
 /// Main application state managed via ChangeNotifier
 ///
@@ -114,15 +116,80 @@ class AppState extends ChangeNotifier {
     return await _weightRepository.getWeightForDate(date);
   }
 
+  // Inventory operations
+  Future<void> updateInventoryQuantity(
+    String pantryItemId,
+    double newQuantity,
+    FoodUnit unit,
+  ) async {
+    final pantryItem = _pantry.firstWhere((item) => item.id == pantryItemId);
+    final updated = pantryItem.copyWith(
+      quantityRemaining: newQuantity,
+      inventoryUnit: unit,
+    );
+    await _pantryRepository.updateItem(updated);
+    _pantry = await _pantryRepository.loadPantry();
+    notifyListeners();
+  }
+
   // Diary operations
   Future<void> logFoodToDate(DateTime date, FoodItem item) async {
+    // Check if this item came from pantry
+    final pantryItemIndex = _pantry.indexWhere((p) => p.id == item.id);
+
     await _diaryRepository.logFoodToDate(date, item);
+
+    // If from pantry, decrement inventory
+    if (pantryItemIndex != -1) {
+      final pantryItem = _pantry[pantryItemIndex];
+      final consumed = UnitConverter.convert(
+        amount: item.servingSize,
+        from: item.servingUnit,
+        to: pantryItem.inventoryUnit,
+        servingSize: pantryItem.servingSize,
+      );
+
+      final updated = pantryItem.copyWith(
+        quantityRemaining: pantryItem.quantityRemaining - consumed,
+      );
+
+      await _pantryRepository.updateItem(updated);
+      _pantry = await _pantryRepository.loadPantry();
+    }
+
     _diary = await _diaryRepository.loadDiary();
     notifyListeners();
   }
 
   Future<void> deleteDiaryEntry(DateTime date, String id) async {
+    // Get the item before deleting to refund inventory
+    final entries = _diary[date] ?? [];
+    final deletedItem = entries.firstWhere(
+      (item) => item.id == id,
+      orElse: () => entries.first, // Fallback, shouldn't happen
+    );
+
     await _diaryRepository.deleteDiaryEntry(date, id);
+
+    // Check if this item came from pantry and refund inventory
+    final pantryItemIndex = _pantry.indexWhere((p) => p.id == deletedItem.id);
+    if (pantryItemIndex != -1) {
+      final pantryItem = _pantry[pantryItemIndex];
+      final refund = UnitConverter.convert(
+        amount: deletedItem.servingSize,
+        from: deletedItem.servingUnit,
+        to: pantryItem.inventoryUnit,
+        servingSize: pantryItem.servingSize,
+      );
+
+      final updated = pantryItem.copyWith(
+        quantityRemaining: pantryItem.quantityRemaining + refund,
+      );
+
+      await _pantryRepository.updateItem(updated);
+      _pantry = await _pantryRepository.loadPantry();
+    }
+
     _diary = await _diaryRepository.loadDiary();
     notifyListeners();
   }
@@ -132,7 +199,46 @@ class AppState extends ChangeNotifier {
     String id,
     FoodItem updatedItem,
   ) async {
+    // Get the old item to calculate the difference
+    final entries = _diary[date] ?? [];
+    final oldItem = entries.firstWhere(
+      (item) => item.id == id,
+      orElse: () => updatedItem, // Fallback to updated if not found
+    );
+
     await _diaryRepository.updateDiaryEntry(date, id, updatedItem);
+
+    // If from pantry, adjust inventory for the difference
+    final pantryItemIndex = _pantry.indexWhere((p) => p.id == updatedItem.id);
+    if (pantryItemIndex != -1) {
+      final pantryItem = _pantry[pantryItemIndex];
+
+      // Convert old and new amounts to inventory units
+      final oldConsumed = UnitConverter.convert(
+        amount: oldItem.servingSize,
+        from: oldItem.servingUnit,
+        to: pantryItem.inventoryUnit,
+        servingSize: pantryItem.servingSize,
+      );
+
+      final newConsumed = UnitConverter.convert(
+        amount: updatedItem.servingSize,
+        from: updatedItem.servingUnit,
+        to: pantryItem.inventoryUnit,
+        servingSize: pantryItem.servingSize,
+      );
+
+      // Adjust: refund old, then deduct new
+      final netChange = newConsumed - oldConsumed;
+
+      final updated = pantryItem.copyWith(
+        quantityRemaining: pantryItem.quantityRemaining - netChange,
+      );
+
+      await _pantryRepository.updateItem(updated);
+      _pantry = await _pantryRepository.loadPantry();
+    }
+
     _diary = await _diaryRepository.loadDiary();
     notifyListeners();
   }

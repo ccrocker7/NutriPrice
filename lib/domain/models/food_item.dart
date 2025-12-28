@@ -5,6 +5,10 @@ class FoodItem {
   final double calories, fat, sodium, carbs, fiber, protein, price, servingSize;
   final FoodUnit servingUnit;
 
+  // Inventory tracking fields
+  final double quantityRemaining;
+  final FoodUnit inventoryUnit;
+
   FoodItem({
     required this.id,
     required this.name,
@@ -17,7 +21,9 @@ class FoodItem {
     required this.price,
     required this.servingSize,
     required this.servingUnit,
-  });
+    this.quantityRemaining = 0.0,
+    FoodUnit? inventoryUnit,
+  }) : inventoryUnit = inventoryUnit ?? servingUnit;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -31,6 +37,8 @@ class FoodItem {
     'price': price,
     'servingSize': servingSize,
     'servingUnit': servingUnit.index,
+    'quantityRemaining': quantityRemaining,
+    'inventoryUnit': inventoryUnit.index,
   };
 
   factory FoodItem.fromJson(Map<String, dynamic> json) => FoodItem(
@@ -45,5 +53,42 @@ class FoodItem {
     price: (json['price'] ?? 0.0).toDouble(),
     servingSize: (json['servingSize'] ?? 0.0).toDouble(),
     servingUnit: FoodUnit.values[json['servingUnit'] ?? 0],
+    quantityRemaining: (json['quantityRemaining'] ?? 0.0).toDouble(),
+    inventoryUnit: json['inventoryUnit'] != null
+        ? FoodUnit.values[json['inventoryUnit']]
+        : null,
   );
+
+  /// Creates a copy with updated fields
+  FoodItem copyWith({
+    String? id,
+    String? name,
+    double? calories,
+    double? fat,
+    double? sodium,
+    double? carbs,
+    double? fiber,
+    double? protein,
+    double? price,
+    double? servingSize,
+    FoodUnit? servingUnit,
+    double? quantityRemaining,
+    FoodUnit? inventoryUnit,
+  }) {
+    return FoodItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      calories: calories ?? this.calories,
+      fat: fat ?? this.fat,
+      sodium: sodium ?? this.sodium,
+      carbs: carbs ?? this.carbs,
+      fiber: fiber ?? this.fiber,
+      protein: protein ?? this.protein,
+      price: price ?? this.price,
+      servingSize: servingSize ?? this.servingSize,
+      servingUnit: servingUnit ?? this.servingUnit,
+      quantityRemaining: quantityRemaining ?? this.quantityRemaining,
+      inventoryUnit: inventoryUnit ?? this.inventoryUnit,
+    );
+  }
 }
