@@ -1,7 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Schema version constant for data migration support
-const int kSchemaVersion = 3;
+const int kSchemaVersion = 2;
 
 /// Key for storing the current schema version
 const String _schemaVersionKey = 'current_schema_version';
@@ -28,10 +28,11 @@ class SchemaMigration {
 
     // Run migrations based on current version
     if (currentVersion == 1) {
+      // Migration from v1 to v2
+      // In v1, data already exists but doesn't have defensive decoding
+      // The defensive decoding in fromJson() will handle missing fields
+      // So we just need to update the version number
       await _migrateV1ToV2(prefs);
-    }
-    if (currentVersion <= 2) {
-      await _migrateV2ToV3(prefs);
     }
 
     // Save the new schema version
@@ -41,20 +42,18 @@ class SchemaMigration {
   }
 
   /// Migrates from v1 to v2
-  static Future<void> _migrateV1ToV2(SharedPreferences prefs) async {
-    // Defensive decoding handles missing fields
-  }
-
-  /// Migrates from v2 to v3
   ///
-  /// Adds inventory tracking fields to existing pantry items
-  static Future<void> _migrateV2ToV3(SharedPreferences prefs) async {
-    final pantryStr = prefs.getString('pantry');
-    if (pantryStr != null) {
-      // The fromJson() with defensive defaults will handle this automatically
-      // quantityRemaining defaults to 0.0
-      // inventoryUnit defaults to servingUnit
-      // No explicit migration code needed
-    }
+  /// In v1, all data exists but may have missing fields in some records
+  /// The defensive decoding in the model classes will handle this
+  static Future<void> _migrateV1ToV2(SharedPreferences prefs) async {
+    // No actual data transformation needed
+    // The fromJson() methods with defensive decoding will handle any missing fields
+    // when the data is loaded
+
+    // Future migrations could add code here to transform data structures
+    // For example, if we add a new field with a non-default value:
+    // - Load all items
+    // - Add the new field with computed values
+    // - Save back to SharedPreferences
   }
 }
