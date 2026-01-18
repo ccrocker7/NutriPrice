@@ -26,7 +26,7 @@ class StatCard extends StatelessWidget {
           value,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: isOver ? Colors.red : Colors.black,
+            color: isOver ? Colors.green : Colors.white,
           ),
         ),
       ],

@@ -53,7 +53,14 @@ class NutriPriceApp extends StatelessWidget {
       title: 'Nutriprice',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        // brightness: Brightness.dark,
+        scaffoldBackgroundColor: Colors.black,
+        canvasColor: Colors.black,
+        // primaryContainer: Colors.green,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.greenAccent,
+          brightness: Brightness.dark,
+        ),
         useMaterial3: true,
       ),
       home: const HomeScreen(),

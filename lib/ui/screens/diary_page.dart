@@ -17,7 +17,7 @@ class DiaryPage extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            color: Theme.of(context).colorScheme.primaryContainer,
+            color: Colors.grey[900],
             child: Wrap(
               alignment: WrapAlignment.spaceAround,
               spacing: 20,
