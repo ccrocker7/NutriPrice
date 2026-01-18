@@ -32,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final state = context.watch<AppState>();
 
     return Scaffold(
-      body: SafeArea(child: _pages[_selectedIndex],),
+      body: SafeArea(child: _pages[_selectedIndex]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (i) => setState(() => _selectedIndex = i),
@@ -46,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ? null
           : SpeedDial(
               icon: Icons.add,
-              backgroundColor: Colors.green,
+              backgroundColor: Colors.grey[900],
               children: _selectedIndex == 0
                   ? [
                       SpeedDialChild(
@@ -146,6 +146,14 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (c) => AddFoodScreen(existingItem: item)),
+        );
+      }
+    } else {
+      // No results found, navigate to New Pantry Item screen for manual entry
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (c) => const AddFoodScreen()),
         );
       }
     }
